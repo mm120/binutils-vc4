@@ -1,5 +1,5 @@
-/* te-ppcnw.h -- Power PC running Netware environment declarations.
-   Copyright 1994, 1995, 2000 Free Software Foundation, Inc.
+/* te-netware.h -- NetWare target environment declarations.
+   Copyright 2004 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -14,19 +14,15 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with GAS; see the file COPYING.  If not, write to
-   the Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+   along with GAS; see the file COPYING.  If not, write to the Free
+   Software Foundation, 59 Temple Place - Suite 330, Boston, MA
    02111-1307, USA.  */
 
-/* Added these, because if we don't know what we're targeting we may
-   need an assembler version of libgcc, and that will use local
-   labels.  */
-#define LOCAL_LABELS_DOLLAR 1
+#define TE_NETWARE
 #define LOCAL_LABELS_FB 1
 
-/* these define interfaces */
+#define LEX_AT  (LEX_NAME | LEX_BEGIN_NAME)  /* Can have @'s inside labels.  */
+#define LEX_PCT (LEX_NAME | LEX_BEGIN_NAME)  /* Can have %'s inside labels.  */
+#define LEX_QM  (LEX_NAME | LEX_BEGIN_NAME)  /* Can have ?'s inside labels.  */
+
 #include "obj-format.h"
-
-/* gcc uses escape sequences for ppc/netware.  */
-
-#undef NO_STRING_ESCAPES
