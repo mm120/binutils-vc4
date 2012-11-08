@@ -717,6 +717,7 @@ vax-*-netbsdaout* | vax-*-netbsd*)
 			targ_extra_emuls=elf32vax ;;
 vax-*-linux-*)  	targ_emul=elf32vax
 			;;
+vc4-*-*)		targ_emul=elf32vc4 ;;
 w65-*-*)		targ_emul=w65
 			;;
 xc16x-*-elf)		targ_emul=elf32xc16x

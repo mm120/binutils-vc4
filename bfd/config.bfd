@@ -104,6 +104,7 @@ spu*)            targ_archs=bfd_spu_arch ;;
 tilegx*)	 targ_archs=bfd_tilegx_arch ;;
 tilepro*)	 targ_archs=bfd_tilepro_arch ;;
 v850*)		 targ_archs=bfd_v850_arch ;;
+vc4*)		 targ_archs=bfd_vc4_arch ;;
 x86_64*)	 targ_archs=bfd_i386_arch ;;
 xtensa*)	 targ_archs=bfd_xtensa_arch ;;
 xgate)		 targ_archs=bfd_xgate_arch ;;
@@ -1588,6 +1589,10 @@ case "${targ}" in
 
   vax-*-linux-*)
     targ_defvec=bfd_elf32_vax_vec
+    ;;
+
+  vc4-*-elf)
+    targ_defvec=bfd_elf32_vc4_vec
     ;;
 
   we32k-*-*)

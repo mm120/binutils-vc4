@@ -586,6 +586,8 @@ bfd_perform_relocation (bfd *abfd,
   reloc_howto_type *howto = reloc_entry->howto;
   asection *reloc_target_output_section;
   asymbol *symbol;
+  
+  printf("bfd_perform_relocation\n");
 
   symbol = *(reloc_entry->sym_ptr_ptr);
   if (bfd_is_abs_section (symbol->section)
@@ -977,6 +979,8 @@ bfd_install_relocation (bfd *abfd,
   asection *reloc_target_output_section;
   asymbol *symbol;
   bfd_byte *data;
+
+  printf("bfd_install_relocation\n");
 
   symbol = *(reloc_entry->sym_ptr_ptr);
   if (bfd_is_abs_section (symbol->section))
@@ -6572,6 +6576,55 @@ ENUM
 ENUMDOC
   Adapteva EPIPHANY - 8 bit immediate for 16 bit mov instruction.
 
+ENUM
+  BFD_RELOC_VC4_ABS32
+ENUMDOC
+  VideoCore IV 32-bit number (in uint16's 1 & 2)
+
+ENUM
+  BFD_RELOC_VC4_REL7_MUL2
+ENUMDOC
+  VideoCore IV 7-bit number (in uint16 0)
+
+ENUM
+  BFD_RELOC_VC4_REL8_MUL2
+ENUMDOC
+  VideoCore IV 8-bit number (in uint16 1)
+
+ENUM
+  BFD_RELOC_VC4_REL10_MUL2
+ENUMDOC
+  VideoCore IV 10-bit number (in uint16 1)
+
+ENUM
+  BFD_RELOC_VC4_REL16
+ENUMDOC
+  VideoCore IV 16-bit number (in uint16 1)
+
+ENUM
+  BFD_RELOC_VC4_REL23_MUL2
+ENUMDOC
+  VideoCore IV 23-bit number (in uint16's 0 & 1)
+
+ENUM
+  BFD_RELOC_VC4_REL27
+ENUMDOC
+  VideoCore IV 27-bit number (in uint16's 1 & 2)
+
+ENUM
+  BFD_RELOC_VC4_REL32
+ENUMDOC
+  VideoCore IV 32-bit number (in uint16's 1 & 2)
+
+ENUM
+  BFD_RELOC_VC4_IMM32
+ENUMDOC
+  VideoCore IV 32-bit number (in uint16's 1 & 2)
+
+ENUM
+  BFD_RELOC_VC4_IMM32_2
+ENUMDOC
+  VideoCore IV 32-bit number  (in uint16's 3 & 4)
 
 ENDSENUM
   BFD_RELOC_UNUSED

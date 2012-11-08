@@ -255,6 +255,7 @@ ALL_EMULATION_SOURCES = \
 	eelf32tilegx_be.c \
 	eelf32tilepro.c \
 	eelf32vax.c \
+	eelf32vc4.c \
 	eelf32xc16x.c \
 	eelf32xc16xl.c \
 	eelf32xc16xs.c \
@@ -1189,6 +1190,9 @@ eelf32tilepro.c: $(srcdir)/emulparams/elf32tilepro.sh \
 eelf32vax.c: $(srcdir)/emulparams/elf32vax.sh \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32vax "$(tdir_elf32vax)"
+eelf32vc4.c: $(srcdir)/emulparams/elf32vc4.sh \
+  $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
+	${GENSCRIPTS} elf32vc4 "$(tdir_openrisc)"
 eelf32xc16x.c: $(srcdir)/emulparams/elf32xc16x.sh \
   $(ELF_DEPS) $(srcdir)/emultempl/needrelax.em \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}

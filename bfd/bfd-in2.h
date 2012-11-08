@@ -2194,6 +2194,8 @@ enum bfd_architecture
 #define bfd_mach_tilegx32  2
   bfd_arch_aarch64,   /* AArch64  */
 #define bfd_mach_aarch64 0
+  bfd_arch_vc4,   /* VideoCore IV  */
+#define bfd_mach_vc4 2
   bfd_arch_last
   };
 
@@ -5503,6 +5505,36 @@ giving a 16 bit signed byte offset.  */
 
 /* Adapteva EPIPHANY - 8 bit immediate for 16 bit mov instruction.  */
   BFD_RELOC_EPIPHANY_IMM8,
+
+/* VideoCore IV 32-bit number (in uint16's 1 & 2)  */
+  BFD_RELOC_VC4_ABS32,
+
+/* VideoCore IV 7-bit number (in uint16 0)  */
+  BFD_RELOC_VC4_REL7_MUL2,
+
+/* VideoCore IV 8-bit number (in uint16 1)  */
+  BFD_RELOC_VC4_REL8_MUL2,
+
+/* VideoCore IV 10-bit number (in uint16 1)  */
+  BFD_RELOC_VC4_REL10_MUL2,
+
+/* VideoCore IV 16-bit number (in uint16 1)  */
+  BFD_RELOC_VC4_REL16,
+
+/* VideoCore IV 23-bit number (in uint16's 0 & 1)  */
+  BFD_RELOC_VC4_REL23_MUL2,
+
+/* VideoCore IV 27-bit number (in uint16's 1 & 2)  */
+  BFD_RELOC_VC4_REL27,
+
+/* VideoCore IV 32-bit number (in uint16's 1 & 2)  */
+  BFD_RELOC_VC4_REL32,
+
+/* VideoCore IV 32-bit number (in uint16's 1 & 2)  */
+  BFD_RELOC_VC4_IMM32,
+
+/* VideoCore IV 32-bit number  (in uint16's 3 & 4)  */
+  BFD_RELOC_VC4_IMM32_2,
   BFD_RELOC_UNUSED };
 typedef enum bfd_reloc_code_real bfd_reloc_code_real_type;
 reloc_howto_type *bfd_reloc_type_lookup

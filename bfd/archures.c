@@ -463,6 +463,8 @@ DESCRIPTION
 .#define bfd_mach_tilegx32  2
 .  bfd_arch_aarch64,   {* AArch64  *}
 .#define bfd_mach_aarch64 0
+.  bfd_arch_vc4,   {* VideoCore IV  *}
+.#define bfd_mach_vc4 2
 .  bfd_arch_last
 .  };
 */
@@ -578,6 +580,7 @@ extern const bfd_arch_info_type bfd_tic80_arch;
 extern const bfd_arch_info_type bfd_tilegx_arch;
 extern const bfd_arch_info_type bfd_tilepro_arch;
 extern const bfd_arch_info_type bfd_v850_arch;
+extern const bfd_arch_info_type bfd_vc4_arch;
 extern const bfd_arch_info_type bfd_vax_arch;
 extern const bfd_arch_info_type bfd_w65_arch;
 extern const bfd_arch_info_type bfd_we32k_arch;
@@ -662,6 +665,7 @@ static const bfd_arch_info_type * const bfd_archures_list[] =
     &bfd_tilepro_arch,
     &bfd_v850_arch,
     &bfd_vax_arch,
+    &bfd_vc4_arch,
     &bfd_w65_arch,
     &bfd_we32k_arch,
     &bfd_xstormy16_arch,

@@ -148,6 +148,7 @@
 #include "elf/tilepro.h"
 #include "elf/v850.h"
 #include "elf/vax.h"
+#include "elf/vc4.h"
 #include "elf/x86-64.h"
 #include "elf/xc16x.h"
 #include "elf/xgate.h"
@@ -1204,6 +1205,10 @@ dump_relocations (FILE * file,
 	  rtype = elf_vax_reloc_type (type);
 	  break;
 
+	case EM_VIDEOCORE4:
+	  rtype = elf_vc4_reloc_type (type);
+	  break;
+
 	case EM_ADAPTEVA_EPIPHANY:
 	  rtype = elf_epiphany_reloc_type (type);
 	  break;
@@ -2037,6 +2042,7 @@ get_machine_name (unsigned e_machine)
     case EM_TILEGX:		return "Tilera TILE-Gx multicore architecture family";
     case EM_CUDA:		return "NVIDIA CUDA architecture";
     case EM_XGATE:		return "Motorola XGATE embedded processor";
+    case EM_VIDEOCORE4:		return "Broadcom VideoCore IV processor";
     default:
       snprintf (buff, sizeof (buff), _("<unknown>: 0x%x"), e_machine);
       return buff;
@@ -10000,6 +10006,8 @@ is_32bit_abs_reloc (unsigned int reloc_type)
       return reloc_type == 6; /* R_V850_ABS32.  */
     case EM_VAX:
       return reloc_type == 1; /* R_VAX_32.  */
+    case EM_VIDEOCORE4:
+      return reloc_type == 1; /* R_VC4_32.  */
     case EM_X86_64:
     case EM_L1OM:
     case EM_K1OM:
