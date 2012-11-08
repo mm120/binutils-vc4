@@ -1,13 +1,14 @@
 ## Process this file with automake to generate Makefile.in
 
 AUTOMAKE_OPTIONS = 1.11 foreign no-dist
-ACLOCAL_AMFLAGS = -I .. -I ../config -I ../bfd
+ACLOCAL_AMFLAGS = -I .. -I ../config -I ../bfd -I ../libvc4
 
 # Build '.' first so all generated files exist.
 SUBDIRS = . po
 
 INCDIR = $(srcdir)/../include
 BFDDIR = $(srcdir)/../bfd
+VC4DIR = $(srcdir)/../libvc4
 
 WARN_CFLAGS = @WARN_CFLAGS@
 NO_WERROR = @NO_WERROR@
@@ -280,7 +281,7 @@ OFILES = @BFD_MACHINES@
 # that's where the version number in Makefile comes from.
 CONFIG_STATUS_DEPENDENCIES = $(BFDDIR)/configure.in
 
-AM_CPPFLAGS = -I. -I$(srcdir) -I../bfd -I$(INCDIR) -I$(BFDDIR) @HDEFINES@ @INCINTL@
+AM_CPPFLAGS = -I. -I$(srcdir) -I../bfd -I$(INCDIR) -I$(BFDDIR) @HDEFINES@ @INCINTL@ -I$(VC4DIR)
 
 disassemble.lo: disassemble.c
 if am__fastdepCC

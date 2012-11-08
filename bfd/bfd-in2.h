@@ -5527,8 +5527,29 @@ giving a 16 bit signed byte offset.  */
 /* VideoCore IV 27-bit number (in uint16's 1 & 2)  */
   BFD_RELOC_VC4_REL27,
 
+/* VideoCore IV 27-bit number (in uint16's 1 & 2)  */
+  BFD_RELOC_VC4_REL27_MUL2,
+
 /* VideoCore IV 32-bit number (in uint16's 1 & 2)  */
   BFD_RELOC_VC4_REL32,
+
+/* VideoCore IV 5-bit number (in uint16 2)  */
+  BFD_RELOC_VC4_IMM5,
+
+/* VideoCore IV 6-bit number (in uint16 2)  */
+  BFD_RELOC_VC4_IMM6,
+
+/* VideoCore IV 11-bit number (in uint16 2)  */
+  BFD_RELOC_VC4_IMM11,
+
+/* VideoCore IV 16-bit number (in uint16 2)  */
+  BFD_RELOC_VC4_IMM16,
+
+/* VideoCore IV 32-bit number (in uint16's 1 & 2)  */
+  BFD_RELOC_VC4_IMM23,
+
+/* VideoCore IV 32-bit number (in uint16's 1 & 2)  */
+  BFD_RELOC_VC4_IMM27,
 
 /* VideoCore IV 32-bit number (in uint16's 1 & 2)  */
   BFD_RELOC_VC4_IMM32,

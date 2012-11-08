@@ -6612,7 +6612,42 @@ ENUMDOC
   VideoCore IV 27-bit number (in uint16's 1 & 2)
 
 ENUM
+  BFD_RELOC_VC4_REL27_MUL2
+ENUMDOC
+  VideoCore IV 27-bit number (in uint16's 1 & 2)
+
+ENUM
   BFD_RELOC_VC4_REL32
+ENUMDOC
+  VideoCore IV 32-bit number (in uint16's 1 & 2)
+
+ENUM
+  BFD_RELOC_VC4_IMM5
+ENUMDOC
+  VideoCore IV 5-bit number (in uint16 2)
+
+ENUM
+  BFD_RELOC_VC4_IMM6
+ENUMDOC
+  VideoCore IV 6-bit number (in uint16 2)
+
+ENUM
+  BFD_RELOC_VC4_IMM11
+ENUMDOC
+  VideoCore IV 11-bit number (in uint16 2)
+
+ENUM
+  BFD_RELOC_VC4_IMM16
+ENUMDOC
+  VideoCore IV 16-bit number (in uint16 2)
+
+ENUM
+  BFD_RELOC_VC4_IMM23
+ENUMDOC
+  VideoCore IV 32-bit number (in uint16's 1 & 2)
+
+ENUM
+  BFD_RELOC_VC4_IMM27
 ENUMDOC
   VideoCore IV 32-bit number (in uint16's 1 & 2)
 

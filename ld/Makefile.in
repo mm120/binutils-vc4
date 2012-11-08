@@ -349,7 +349,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 use_sysroot = @use_sysroot@
 AUTOMAKE_OPTIONS = dejagnu no-texinfo.tex no-dist foreign
-ACLOCAL_AMFLAGS = -I .. -I ../config -I ../bfd
+ACLOCAL_AMFLAGS = -I .. -I ../config -I ../bfd -I ../libvc4
 TEXINFO_TEX = ../texinfo/texinfo.tex
 SUBDIRS = po
 tooldir = $(exec_prefix)/$(target_alias)
@@ -377,6 +377,7 @@ scriptdir = $(tooldir)/lib
 BASEDIR = $(srcdir)/..
 BFDDIR = $(BASEDIR)/bfd
 INCDIR = $(BASEDIR)/include
+VC4DIR = $(BASEDIR)/libvc4
 
 # What version of the manual to build
 DOCVER = gen
@@ -433,12 +434,13 @@ AM_MAKEINFOFLAGS = -I $(srcdir) -I $(BFDDIR)/doc -I ../bfd/doc \
 TEXI2DVI = texi2dvi -I $(srcdir) -I $(BFDDIR)/doc -I ../bfd/doc \
 		    -I $(top_srcdir)/../libiberty
 
-AM_CPPFLAGS = -I. -I$(srcdir) -I../bfd -I$(BFDDIR) -I$(INCDIR) \
+AM_CPPFLAGS = -I. -I$(srcdir) -I../bfd -I$(BFDDIR) -I$(INCDIR) -I$(VC4DIR) \
 	@INCINTL@ $(HDEFINES) $(CFLAGS) $(PLUGIN_CFLAGS) \
 	-DLOCALEDIR="\"$(datadir)/locale\""
 
 BFDLIB = ../bfd/libbfd.la
 LIBIBERTY = ../libiberty/libiberty.a
+VC4LIB = ../libvc4/libvc4.a
 ALL_EMULATION_SOURCES = \
 	eaix5ppc.c \
 	eaix5rs6.c \
@@ -871,8 +873,8 @@ EXTRA_ld_new_SOURCES = deffilep.y ldlex.l pep-dll.c pe-dll.c \
 ld_new_SOURCES = ldgram.y ldlex-wrapper.c lexsup.c ldlang.c mri.c ldctor.c ldmain.c \
 	ldwrite.c ldexp.c ldemul.c ldver.c ldmisc.c ldfile.c ldcref.c $(PLUGIN_C)
 
-ld_new_DEPENDENCIES = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL_DEP)
-ld_new_LDADD = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL)
+ld_new_DEPENDENCIES = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL_DEP) $(VC4LIB)
+ld_new_LDADD = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL) $(VC4LIB)
 
 # A test program for C++ constructors and destructors.
 # This test is now in the testsuite.

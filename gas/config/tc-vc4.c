@@ -23,6 +23,11 @@
 #include "as.h"
 #include "subsegs.h"
 #include "symcat.h"
+#include "vc4.h"
+#include <ctype.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <assert.h>
 
 const char comment_chars[]        = "#";
 const char line_comment_chars[]   = "#";
@@ -72,11 +77,6 @@ const pseudo_typeS md_pseudo_table[] =
 
 #define UNUSED(x) ((void)&x)
 
-#include "../../videocoreiv/vc4.h"
-#include "../../videocoreiv/vc4_util.c"
-#include "../../videocoreiv/vc4_arch.c"
-#include "../../videocoreiv/vc4_decode.c"
-#include "../../videocoreiv/eval.c"
 
 struct vc4_info *vc4_info;
 
@@ -119,7 +119,8 @@ md_begin (void)
   /*char buf[256];*/
 
   if (vc4_info == NULL) {
-    vc4_info = vc4_read_arch_file("/home/marmar01/src/rpi/videocoreiv/videocoreiv.arch");
+    vc4_info = vc4_read_arch_file(
+      "/home/marmar01/src/rpi/videocoreiv/videocoreiv.arch");
   }
   vc4_get_opcodes(vc4_info);
 
@@ -192,6 +193,8 @@ struct op_info
 
 static char *print_op_info(const struct op_info *inf, char *buf)
 {
+  char temp[16];
+
   switch (inf->type)
     {
     case ot_unknown:         strcpy(buf, "<unknown>"); break;
@@ -201,9 +204,24 @@ static char *print_op_info(const struct op_info *inf, char *buf)
     case ot_reg_addr:        sprintf(buf, "(r%d)", inf->num); break;
     case ot_reg_addr_pi:     sprintf(buf, "(r%d)++", inf->num); break;
     case ot_reg_addr_pd:     sprintf(buf, "--(r%d)", inf->num); break;
-    case ot_reg_addr_offset: sprintf(buf, "%d(r%d)", (int)inf->exp.X_add_number, inf->num); break;
-    case ot_num:             sprintf(buf, "%d", (int)inf->exp.X_add_number); break;
+
+    case ot_reg_addr_offset:
+    case ot_num:
+      sprintf(buf, "%d (%p %p %u:0x%08x  width:%u)", inf->exp.X_op,
+	      inf->exp.X_add_symbol,
+	      inf->exp.X_op_symbol,
+	      (unsigned)inf->exp.X_add_number,
+	      (unsigned)inf->exp.X_add_number,
+	      inf->width);
+
+      if (inf->type == ot_reg_addr_offset) {
+	sprintf(temp, "(r%d)", inf->num);
+	strcat(buf, temp);
+      }
+      break;
+
     default:
+      printf("asdfasld999fk %s %d\n", __FUNCTION__, __LINE__);
       abort();
       break;
     }
@@ -259,6 +277,18 @@ static char *match_reg(char *str, int *num)
 
 static uint32_t vc4_log2(uint32_t v)
 {
+  uint32_t w = 32;
+  if (v == 0)
+    return 1;
+  while (w > 2) {
+    if ((v ^ (v << 1)) & 0x80000000) {
+      return w;
+    }
+    v <<= 1;
+    w--;
+  }
+  return w;
+  /*
   if (v & 0x80000000)
     return 1 + vc4_log2(~v);
   if (v & 0xffff0000)
@@ -272,6 +302,7 @@ static uint32_t vc4_log2(uint32_t v)
   if (v & 0x2)
     return 1 + vc4_log2(v >> 1);
   return 1;
+  */
 }
 
 static char *vc4_get_operand(char *str, struct op_info *inf)
@@ -289,7 +320,6 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
     if (*str == ',' || *str == 0) {
       inf->type = ot_reg;
       inf->num = reg;
-      printf("OP r%d\n", inf->num);
       return str;
     }
     else if (*str == '-') {
@@ -304,7 +334,6 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	inf->type = ot_reg_range;
 	inf->num = reg;
 	inf->num2 = reg2;
-	printf("OP r%d-r%d\n", inf->num, inf->num2);
 	return str;
       }
     }
@@ -331,7 +360,6 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	  str += 2;
 	}
 	if (*str == ',' || *str == 0) {
-	  printf("OP %s(r%d)%s\n", pre_dec?"--":"", reg, post_inc?"++":"");
 	  inf->type =
 	    pre_dec ? ot_reg_addr_pd :
 	    post_inc ? ot_reg_addr_pi :
@@ -357,10 +385,6 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	if (*str == ')') {
 	  str++;
 	  if (*str == ',' || *str == 0) {
-	    printf("OP E (r%d) %d (%p %p %u)\n", reg, inf->exp.X_op,
-	     inf->exp.X_add_symbol,
-	     inf->exp.X_op_symbol,
-	     (unsigned)inf->exp.X_add_number);
 	    inf->type = ot_reg_addr_offset;
 	    inf->num = reg;
 	    inf->width = 32;
@@ -369,14 +393,9 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	}
       }
     } else if (*str == ',' || *str == 0) {
-      printf("OP E = %d (%p %p %u)\n", inf->exp.X_op,
-	     inf->exp.X_add_symbol,
-	     inf->exp.X_op_symbol,
-	     (unsigned)inf->exp.X_add_number);
       inf->type = ot_num;
-      inf->num = inf->exp.X_add_number;
       if (inf->exp.X_op == O_constant)
-	inf->width = vc4_log2(inf->num);
+	inf->width = vc4_log2(inf->exp.X_add_number);
       else
 	inf->width = 32;
       return str;
@@ -392,6 +411,7 @@ vc4_operands (char **line, struct op_info *ops)
   char *str = skip_space(*line);
   int i;
   const int max_ops = 3;
+  char buf[256];
 
   if (*str == 0) {
     *line = str;
@@ -411,6 +431,7 @@ vc4_operands (char **line, struct op_info *ops)
     if (str == NULL) {
       return -1;
     }
+    printf("OP%d = %s\n", i+1, print_op_info(&ops[i], buf));
     if (*str == 0) {
       *line = str;
       return i + 1;
@@ -575,6 +596,7 @@ static struct vc4_asm *match_op_info_to_vc4_asm(size_t count, struct op_info *op
   int this_error;
   int ret;
   size_t i;
+  int ers[3];
 
   best = NULL;
   best_error = INT_MAX;
@@ -584,15 +606,38 @@ static struct vc4_asm *match_op_info_to_vc4_asm(size_t count, struct op_info *op
     if (opcode->op->num_params != count)
       continue;
 
+    ers[0] = ers[1] = ers[2] = 0;
+
     this_error = 0;
     for (i=0; i<count; i++) {
       ret = match_op_info_to_vc4_asm_item(&opcode->op->params[i], &ops[i]);
+      ers[i] = ret;
       if (ret < 0) {
 	this_error = -1;
 	break;
       }
       this_error += ret;
     }
+
+    printf("opcode = %-10s %s\n", opcode->str, opcode->op->format);
+    {
+      printf("  ");
+      for (i=0; i<opcode->pat.count; i++) {
+	printf(" (%c/%u)",
+	       opcode->pat.pat[i].code,
+	       opcode->pat.pat[i].val);
+      }
+      for (i=0; i<opcode->op->num_params; i++) {
+	printf(" %d[%u/%u/%c/%c]=%d", opcode->op->params[i].type,
+	       opcode->op->params[i].reg_width,
+	       opcode->op->params[i].num_width,
+	       opcode->op->params[i].code ? opcode->op->params[i].code : ' ',
+	       opcode->op->params[i].code2 ? opcode->op->params[i].code2 : ' ',
+	       ers[i]);
+      }
+      printf(" => %d\n", this_error);
+    }
+
     if (i == count && this_error >= 0) {
       if (this_error < best_error) {
 	best_error = this_error;
@@ -642,6 +687,21 @@ static void fill_value(uint16_t *ins, const struct vc4_opcode *op, char code, ui
   }
 }
 
+static int is_param_pcrel(enum vc4_param_type type)
+{
+  switch (type) {
+  case vc4_p_pc_rel_s:
+  case vc4_p_pc_rel_s2:
+  case vc4_p_pc_rel_s4:
+    return 1;
+    break;
+
+  default:
+    break;
+  }
+  return 0;
+}
+
 void
 md_assemble (char * str)
 {
@@ -659,6 +719,7 @@ md_assemble (char * str)
 
   list = (struct vc4_asm *) hash_find (vc4_hash, op);
 
+  /*
   for (opcode = list; opcode != NULL; opcode = opcode->next) {
     printf("opcode = %-10s %s\n", opcode->str, opcode->op->format);
     if (opcode->op->num_params != 0 || opcode->pat.count != 0) {
@@ -678,6 +739,7 @@ md_assemble (char * str)
       printf("\n");
     }
   }
+  */
 
   dwarf2_emit_insn (0);
 
@@ -710,13 +772,9 @@ md_assemble (char * str)
       char buf2[256];
       int x;
 
-      ins[0] = opcode->op->val;
-      ins[1] = opcode->op->val2;
+      ins[0] = opcode->ins[0];
+      ins[1] = opcode->ins[1];
       ins[2] = ins[3] = ins[4] = 0;
-
-      for (i=0; i<opcode->pat.count; i++) {
-	fill_value(ins, opcode->op, opcode->pat.pat[i].code, opcode->pat.pat[i].val);
-      }
 
       for (i=0; i<opcode->op->num_params; i++) {
 	if (!opcode->op->params[i].code) {
@@ -727,48 +785,57 @@ md_assemble (char * str)
 
 	switch (ops[i].type) {
 	case ot_num:
-	  if (ops[i].exp.X_op == O_symbol) {
-	    if (opcode->op->params[i].num_width == 32) {
-	      printf("fix_new_exp pc-rel 32 %s\n", print_op_info(&ops[i], buf2));
-	      fix_new_exp(frag_now, where, opcode->op->length * 2,
-			  &ops[i].exp, FALSE, BFD_RELOC_VC4_REL32);
-	    }
-	    else if (opcode->op->params[i].num_width == 23) {
-	      printf("fix_new_exp pc-rel 23 %s\n", print_op_info(&ops[i], buf2));
-	      fix_new_exp(frag_now, where, opcode->op->length * 2,
-			  &ops[i].exp, TRUE, BFD_RELOC_VC4_REL23_MUL2);
-	    }
-	  }
-	  break;
-
 	case ot_reg_addr_offset:
-	  switch (opcode->op->params[i].type) {
-	  case vc4_p_addr_reg_num_s:
-	  case vc4_p_addr_reg_num_u:
-	    fill_value(ins, opcode->op, opcode->op->params[i].code, ops[i].num);
-	    break;
-
-	  default:
-	    printf("asdfasld999fk\n");
-	    break;
+	  if (ops[i].type == ot_reg_addr_offset) {
+	    switch (opcode->op->params[i].type) {
+	    case vc4_p_addr_reg_num_s:
+	    case vc4_p_addr_reg_num_u:
+	      fill_value(ins, opcode->op, opcode->op->params[i].code, ops[i].num);
+	      break;
+	      
+	    default:
+	      printf("asdfasld999fk\n");
+	      break;
+	    }
 	  }
 
 	  if (ops[i].exp.X_op == O_symbol) {
-	    if (opcode->op->params[i].num_width == 32) {
-	      printf("fix_new_exp pc-rel 32 %s\n", print_op_info(&ops[i], buf2));
-	      fix_new_exp(frag_now, where, opcode->op->length * 2,
-			  &ops[i].exp, FALSE, BFD_RELOC_VC4_REL32);
+	    if (is_param_pcrel(opcode->op->params[i].type)) {
+	      if (opcode->op->params[i].num_width == 23) {
+		printf("fix_new_exp pc-rel 23 %s\n", print_op_info(&ops[i], buf2));
+		fix_new_exp(frag_now, where, opcode->op->length * 2,
+			    &ops[i].exp, TRUE, BFD_RELOC_VC4_REL23_MUL2);
+	      }
+	      else if (opcode->op->params[i].num_width == 27) {
+		printf("fix_new_exp pc-rel 27 %s\n", print_op_info(&ops[i], buf2));
+		fix_new_exp(frag_now, where, opcode->op->length * 2,
+			    &ops[i].exp, TRUE, BFD_RELOC_VC4_REL27_MUL2);
+	      }
+	      else if (opcode->op->params[i].num_width == 32) {
+		printf("fix_new_exp pc-rel 32 %s\n", print_op_info(&ops[i], buf2));
+		fix_new_exp(frag_now, where, opcode->op->length * 2,
+			    &ops[i].exp, TRUE, BFD_RELOC_VC4_REL32);
+	      }
+	    } else {
+	      if (opcode->op->params[i].num_width == 23) {
+		printf("fix_new_exp imm 23 %s\n", print_op_info(&ops[i], buf2));
+		fix_new_exp(frag_now, where, opcode->op->length * 2,
+			    &ops[i].exp, FALSE, BFD_RELOC_VC4_IMM23);
+	      }
+	      else if (opcode->op->params[i].num_width == 27) {
+		printf("fix_new_exp imm 27 %s %x\n", print_op_info(&ops[i], buf2), where);
+		fix_new_exp(frag_now, where, opcode->op->length * 2,
+			    &ops[i].exp, FALSE, BFD_RELOC_VC4_IMM27);
+	      }
+	      else if (opcode->op->params[i].num_width == 32) {
+		printf("fix_new_exp imm 32 %s %x\n", print_op_info(&ops[i], buf2), where);
+		fix_new_exp(frag_now, where, opcode->op->length * 2,
+			    &ops[i].exp, FALSE, BFD_RELOC_VC4_IMM32);
+	      }
 	    }
-	    else if (opcode->op->params[i].num_width == 23) {
-	      printf("fix_new_exp pc-rel 23 %s\n", print_op_info(&ops[i], buf2));
-	      fix_new_exp(frag_now, where, opcode->op->length * 2,
-			  &ops[i].exp, TRUE, BFD_RELOC_VC4_REL23_MUL2);
-	    }
-	    else if (opcode->op->params[i].num_width == 27) {
-	      printf("fix_new_exp pc-rel 27 %s\n", print_op_info(&ops[i], buf2));
-	      fix_new_exp(frag_now, where, opcode->op->length * 2,
-			  &ops[i].exp, TRUE, BFD_RELOC_VC4_REL27);
-	    }
+	  }
+	  else if (ops[i].exp.X_op == O_constant) {
+	    fill_value(ins, opcode->op, opcode->op->params[i].code, ops[i].exp.X_add_number);
 	  }
 	  break;
 
@@ -791,10 +858,11 @@ md_assemble (char * str)
 	  default: abort(); break;
 	  }
 	  fill_value(ins, opcode->op, opcode->op->params[i].code, x);
-	  fill_value(ins, opcode->op, opcode->op->params[i].code2, ops[i].num2);
+	  fill_value(ins, opcode->op, opcode->op->params[i].code2, (ops[i].num2 - ops[i].num) & 31);
 	  break;
 
 	default:
+	      printf("asdfasld999fk\n");
 	  abort();
 	  fill_value(ins, opcode->op, opcode->op->params[i].code, ops[i].num);
 	  break;
@@ -966,48 +1034,7 @@ md_pcrel_from_section (fixS * fixP, segT sec)
   return (fixP->fx_frag->fr_address + fixP->fx_where) & ~1;
 }
 
-#if 0
 
-/* Return the bfd reloc type for OPERAND of INSN at fixup FIXP.
-   Returns BFD_RELOC_NONE if no reloc type can be found.
-   *FIXP may be modified if desired.  */
-
-bfd_reloc_code_real_type
-md_cgen_lookup_reloc (const CGEN_INSN *    insn ATTRIBUTE_UNUSED,
-		      const CGEN_OPERAND * operand,
-		      fixS *               fixP)
-{
-  bfd_reloc_code_real_type type;
-
-  switch (operand->type)
-    {
-    case VC4_OPERAND_ABS_26:
-      fixP->fx_pcrel = 0;
-      type = BFD_RELOC_VC4_ABS_26;
-      goto emit;
-    case VC4_OPERAND_DISP_26:
-      fixP->fx_pcrel = 1;
-      type = BFD_RELOC_VC4_REL_26;
-      goto emit;
-
-    case VC4_OPERAND_HI16:
-      type = BFD_RELOC_HI16;
-      goto emit;
-
-    case VC4_OPERAND_LO16:
-      type = BFD_RELOC_LO16;
-      goto emit;
-
-    emit:
-      return type;
-
-    default : /* avoid -Wall warning */
-      break;
-    }
-
-  return BFD_RELOC_NONE;
-}
-#endif
 
 
 /* Write a value out to the object file, using the appropriate endianness.  */
@@ -1035,13 +1062,10 @@ md_atof (int type, char * litP, int *  sizeP)
 bfd_boolean
 vc4_fix_adjustable (fixS * fixP)
 {
-  UNUSED(fixP);
-#if 0
   /* We need the symbol name for the VTABLE entries.  */
   if (fixP->fx_r_type == BFD_RELOC_VTABLE_INHERIT
       || fixP->fx_r_type == BFD_RELOC_VTABLE_ENTRY)
     return 0;
-#endif
 
   return 1;
 }
@@ -1052,7 +1076,10 @@ vc4_fix_adjustable (fixS * fixP)
 void
 md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 {
-  printf("md_apply_fix %d %s\n", fixP->fx_r_type, ""/*bfd_reloc_code_real_names[fixP->fx_r_type]*/);
+  printf("md_apply_fix %d %s 0x%lx %p %d\n",
+	 fixP->fx_r_type, ""/*bfd_reloc_code_real_names[fixP->fx_r_type]*/,
+	 fixP->fx_where,
+	 fixP->fx_addsy, fixP->fx_pcrel);
 
   unsigned char *where;
   unsigned long insn;
@@ -1127,6 +1154,75 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 	  insn = (insn & 0xf800) | ((value >> 16) & 0x7ff);
 	  bfd_putl16 ((bfd_vma) ((insn & 0xf800) | ((value >> 16) & 0x7ff)), where + 2);
 	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 4);
+	  break;
+
+	case BFD_RELOC_VC4_REL27_MUL2:
+	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_REL27_MUL2");
+
+	  if (value & 1)
+	    as_bad_where (fixP->fx_file, fixP->fx_line,
+			  _("odd address operand: %ld"), value);
+
+	  /* Instruction addresses are always right-shifted by 1.  */
+	  value >>= 1;
+
+	  /*	  if (value < -64 || value > 63)
+	    as_bad_where (fixP->fx_file, fixP->fx_line,
+			  _("operand out of range: %ld"), value);
+	  */
+	  insn = bfd_getl16 (where);
+	  insn = (insn & 0xf080);
+	  insn |= (value >> 16) & 0x007f;
+	  insn |= (value >> 15) & 0x0f00;
+	  bfd_putl16 ((bfd_vma) (insn), where);
+	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
+	  break;
+
+	case BFD_RELOC_VC4_REL32:
+	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_REL32");
+
+	  /*	  if (value < -64 || value > 63)
+	    as_bad_where (fixP->fx_file, fixP->fx_line,
+			  _("operand out of range: %ld"), value);
+	  */
+	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
+	  bfd_putl16 ((bfd_vma) ((value >> 16) & 0xffff), where + 4);
+	  break;
+
+	case BFD_RELOC_VC4_IMM23:
+	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_IMM23");
+
+	  /*	  if (value < -64 || value > 63)
+	    as_bad_where (fixP->fx_file, fixP->fx_line,
+			  _("operand out of range: %ld"), value);
+	  */
+	  insn = bfd_getl16 (where);
+	  bfd_putl16 ((bfd_vma) ((insn & 0xff80) | ((value >> 16) & 0x007f)), where);
+	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
+	  break;
+
+	case BFD_RELOC_VC4_IMM27:
+	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_IMM27");
+
+	  /*	  if (value < -64 || value > 63)
+	    as_bad_where (fixP->fx_file, fixP->fx_line,
+			  _("operand out of range: %ld"), value);
+	  */
+	  insn = bfd_getl16 (where + 2);
+	  insn = (insn & 0xf800) | ((value >> 16) & 0x7ff);
+	  bfd_putl16 ((bfd_vma) ((insn & 0xf800) | ((value >> 16) & 0x7ff)), where + 2);
+	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 4);
+	  break;
+
+	case BFD_RELOC_VC4_IMM32:
+	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_IMM32");
+
+	  /*	  if (value < -64 || value > 63)
+	    as_bad_where (fixP->fx_file, fixP->fx_line,
+			  _("operand out of range: %ld"), value);
+	  */
+	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
+	  bfd_putl16 ((bfd_vma) ((value >> 16) & 0xffff), where + 4);
 	  break;
 #if 0
 	case BFD_RELOC_AVR_13_PCREL:
@@ -1274,8 +1370,8 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
           break;
 #endif
         default:
-	  as_fatal (_("line %d: unknown relocation type: 0x%x"),
-		    fixP->fx_line, fixP->fx_r_type);
+	  as_fatal (_("line %d: unknown relocation type: 0x%x (%u)"),
+		    fixP->fx_line, fixP->fx_r_type, fixP->fx_r_type);
 	  break;
 	}
     }
