@@ -95,11 +95,12 @@ void vc4_add_opcode_tab(struct vc4_opcode_tab **tabp, struct vc4_opcode *op)
 	*tabp = tab;
 }
 
-void vc4_fill_value(uint16_t *ins, const struct vc4_opcode *op, char code, uint32_t val)
+void vc4_fill_value(uint16_t *ins, uint16_t *ins_mask, const struct vc4_opcode *op,
+		    char code, uint32_t val)
 {
 	uint16_t mask;
-	uint16_t *p;
 	const char *f;
+	size_t pi;
 
 	assert(op->length >= 1 && op->length <= 5);
 	assert(strlen(op->string) == 16 * op->length);
@@ -110,22 +111,25 @@ void vc4_fill_value(uint16_t *ins, const struct vc4_opcode *op, char code, uint3
 	}
 
 	mask = 0x0000;
-	p = ins + op->length;
+	pi = op->length;
 	f = op->string + 16 * op->length;
 
 	assert(*f == 0);
 
-	while (p >= ins) {
+	for (;;) {
 		if (mask == 0) {
+			if (pi == 0)
+				break;
 			mask = 0x0001;
-			p--;
+			pi--;
 		}
 
 		if (*--f == code) {
-			*p &= ~mask;
-			if (val & 1) {
-				*p |= mask;
-			}
+			ins[pi] &= ~mask;
+			if (val & 1)
+				ins[pi] |= mask;
+			if (ins_mask != NULL)
+				ins_mask[pi] |= mask;
 			val >>= 1;
 		}
 		mask <<= 1;

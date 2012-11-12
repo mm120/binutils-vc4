@@ -508,7 +508,6 @@ TARGET_LIBOPCODES_CFILES = \
 	v850-dis.c \
 	v850-opc.c \
 	vax-dis.c \
-	vc4-opc.c \
 	vc4-dis.c \
 	w65-dis.c \
 	xc16x-asm.c \
@@ -905,7 +904,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/v850-opc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vax-dis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vc4-dis.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vc4-opc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/w65-dis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xc16x-asm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xc16x-desc.Plo@am__quote@

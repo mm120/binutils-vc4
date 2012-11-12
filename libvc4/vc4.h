@@ -27,8 +27,10 @@ struct vc4_decode_table
 	VC4_PX(m, (reg_range,    "r%d-r%d", ())) \
 	VC4_PX(m, (reg_range_r6, "r6-r%d", ())) \
 	VC4_PX(m, (reg_shl, "", ()))		\
-	VC4_PX(m, (reg_shl_8, "", ())) \
 	VC4_PX(m, (reg_shl_p1, "", ())) \
+	VC4_PX(m, (reg_lsr, "", ()))		\
+	VC4_PX(m, (reg_lsr_p1, "", ())) \
+	VC4_PX(m, (reg_shl_8, "", ())) \
 	VC4_PX(m, (num_u_shl_p1, "", ())) \
 	VC4_PX(m, (num_s_shl_p1, "", ())) \
  \
@@ -42,21 +44,22 @@ struct vc4_decode_table
 	VC4_PX(m, (addr_reg_post_inc, "(r%d)++", (num)))/* addr of reg              (r%i{s})++ */ \
 	VC4_PX(m, (addr_reg_pre_dec, "--(r%d)", (num)))	/* addr of reg              --(r%i{s}) */ \
  \
-	VC4_PX(m, (pc_rel_s,   "$+%u", (num)))		/* pc rel addr + signed     0x%08x{$+o} */ \
-	VC4_PX(m, (pc_rel_s2,  "$+%u", (num*2)))	/* pc rel addr + signed     0x%08x{$+o*2} */ \
-	VC4_PX(m, (pc_rel_s4,  "$+%u", (num*4)))	/* pc rel addr + signed     0x%08x{$+o*4} */ \
- \
-	VC4_PX(m, (sp_rel_s,   "sp+%d", (num)))		/* sp rel addr + signed     0x%08x{sp+o} */ \
-	VC4_PX(m, (sp_rel_s2,  "sp+%d", (num*2)))	/* sp rel addr + signed     0x%08x{sp+o*2} */ \
-	VC4_PX(m, (sp_rel_s4,  "sp+%d", (num*4)))	/* sp rel addr + signed     0x%08x{sp+o*4} */ \
+	VC4_PX(m, (r0_rel_s,   "r0+%d", (num)))		/* r0 rel addr + signed    0x%08x{r0+o} */ \
+	VC4_PX(m, (r0_rel_s2,  "r0+%d", (num*2)))	/* r0 rel addr + signed    0x%08x{r0+o*2} */ \
+	VC4_PX(m, (r0_rel_s4,  "r0+%d", (num*4)))	/* r0 rel addr + signed    0x%08x{r0+o*4} */ \
  \
 	VC4_PX(m, (r24_rel_s,  "r24+%d", (num)))	/* r24 rel addr + signed    0x%08x{r24+o} */ \
 	VC4_PX(m, (r24_rel_s2, "r24+%d", (num*2)))	/* r24 rel addr + signed    0x%08x{r24+o*2} */ \
 	VC4_PX(m, (r24_rel_s4, "r24+%d", (num*4)))	/* r24 rel addr + signed    0x%08x{r24+o*4} */ \
  \
-	VC4_PX(m, (r0_rel_s,   "r0+%d", (num)))		/* r0 rel addr + signed    0x%08x{r0+o} */ \
-	VC4_PX(m, (r0_rel_s2,  "r0+%d", (num*2)))	/* r0 rel addr + signed    0x%08x{r0+o*2} */ \
-	VC4_PX(m, (r0_rel_s4,  "r0+%d", (num*4)))	/* r0 rel addr + signed    0x%08x{r0+o*4} */ \
+	VC4_PX(m, (sp_rel_s,   "sp+%d", (num)))		/* sp rel addr + signed     0x%08x{sp+o} */ \
+	VC4_PX(m, (sp_rel_s2,  "sp+%d", (num*2)))	/* sp rel addr + signed     0x%08x{sp+o*2} */ \
+	VC4_PX(m, (sp_rel_s4,  "sp+%d", (num*4)))	/* sp rel addr + signed     0x%08x{sp+o*4} */ \
+ \
+	VC4_PX(m, (pc_rel_s,   "$+%u", (num)))		/* pc rel addr + signed     0x%08x{$+o} */ \
+	VC4_PX(m, (pc_rel_s2,  "$+%u", (num*2)))	/* pc rel addr + signed     0x%08x{$+o*2} */ \
+	VC4_PX(m, (pc_rel_s4,  "$+%u", (num*4)))	/* pc rel addr + signed     0x%08x{$+o*4} */ \
+ \
 
 
 	/*
@@ -85,8 +88,8 @@ struct vc4_param
 	enum vc4_param_type type;
 	size_t reg_width;
 	size_t num_width;
-	char code;
-	char code2;
+	char reg_code;
+	char num_code;
 };
 
 struct vc4_val
@@ -102,11 +105,12 @@ struct vc4_opcode
 	char string[81];
 	char *format;
 	size_t length;
-	uint16_t mask, val;
-	uint16_t mask2, val2;
+
+	uint16_t ins[2];
+	uint16_t ins_mask[2];
 
 	size_t num_params;
-	struct vc4_param params[3];
+	struct vc4_param params[5];
 
 	struct vc4_val vals[26];
 };
@@ -126,12 +130,15 @@ struct vc4_asm
 	struct vc4_asm *next;
 	struct vc4_asm *next_all;
 
-	char *str;
+	char str[16];
 	struct vc4_op_pat pat;
 
 	struct vc4_opcode *op;
 
 	uint16_t ins[2];
+	uint16_t ins_mask[2];
+
+	struct vc4_asm *relax;
 };
 
 struct vc4_opcode_tab
@@ -164,11 +171,13 @@ struct vc4_info *vc4_read_arch_file(const char *path);
 
 void vc4_free_info(struct vc4_info *info);
 
-char *vc4_display(const struct vc4_info *info, const struct vc4_opcode *op, uint32_t addr, const uint8_t *b, uint32_t len);
+char *vc4_display(const struct vc4_info *info, const struct vc4_opcode *op,
+		  uint32_t addr, const uint8_t *b, uint32_t len);
 
 const struct vc4_opcode *vc4_get_opcode(const struct vc4_info *info, const uint8_t *b, size_t l);
 
-void vc4_build_values(struct vc4_val *vals, const struct vc4_opcode *op, const uint8_t *b, uint32_t len);
+void vc4_build_values(struct vc4_val *vals, const struct vc4_opcode *op,
+		      const uint8_t *b, uint32_t len);
 
 void vc4_add_opcode_tab(struct vc4_opcode_tab **tabp, struct vc4_opcode *op);
 
@@ -179,5 +188,7 @@ void vc4_strcat(char **dest, const char *src);
 
 void vc4_trim_space(char *p);
 
+void vc4_fill_value(uint16_t *ins, uint16_t *maskp, const struct vc4_opcode *op,
+		    char code, uint32_t val);
 
 #endif

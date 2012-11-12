@@ -15,7 +15,8 @@
 #include "vc4.h"
 
 
-void vc4_build_values(struct vc4_val *vals, const struct vc4_opcode *op, const uint8_t *b, uint32_t len)
+void vc4_build_values(struct vc4_val *vals, const struct vc4_opcode *op,
+		      const uint8_t *b, uint32_t len)
 {
 	memset(vals, 0, sizeof(struct vc4_val) * 256);
 
@@ -50,11 +51,14 @@ void vc4_build_values(struct vc4_val *vals, const struct vc4_opcode *op, const u
 
 	for (i=0; i<256; i++) {
 		if (vals[i].length == 32)
-			vals[i].value = ((vals[i].value >> 16) & 0xffff) | ((vals[i].value & 0xffff) << 16);
+			vals[i].value =
+			  ((vals[i].value >> 16) & 0xffff) |
+			  ((vals[i].value & 0xffff) << 16);
 	}
 }
 
-static char *vc4_expand_expr(const char *p, const struct vc4_info *info, const struct vc4_val *vals)
+static char *vc4_expand_expr(const char *p, const struct vc4_info *info,
+			     const struct vc4_val *vals)
 {
 	char *exp2;
 	char *np;
@@ -92,7 +96,8 @@ static char *vc4_expand_expr(const char *p, const struct vc4_info *info, const s
 	return exp2;
 }
 
-static int64_t vc4_eval_expr(const char *exp, const struct vc4_info *info, const struct vc4_val *vals)
+static int64_t vc4_eval_expr(const char *exp, const struct vc4_info *info,
+			     const struct vc4_val *vals)
 {
 	char *exp2;
 	int64_t ev;
@@ -106,8 +111,8 @@ static int64_t vc4_eval_expr(const char *exp, const struct vc4_info *info, const
 	return ev;
 }
 
-
-char *vc4_display(const struct vc4_info *info, const struct vc4_opcode *op, uint32_t addr, const uint8_t *b, uint32_t len)
+char *vc4_display(const struct vc4_info *info, const struct vc4_opcode *op,
+		  uint32_t addr, const uint8_t *b, uint32_t len)
 {
 	struct vc4_val vals[256];
 
@@ -200,14 +205,17 @@ const struct vc4_opcode *vc4_get_opcode(const struct vc4_info *info, const uint8
 		return t->tab[0];
 
 	for (i=0; i<t->count; i++) {
-		if ((b0 & t->tab[i]->mask) == t->tab[i]->val)
+		if ((b0 & t->tab[i]->ins_mask[0]) == t->tab[i]->ins[0])
 			return t->tab[i];
 	}
 
 	if (l < 4) {
 		fprintf(stderr, "overrun 2 %04x!\n", b0);
 		for (i=0; i<t->count; i++) {
-			fprintf(stderr, "> %04x %04x %s!\n", t->tab[i]->mask, t->tab[i]->val, t->tab[i]->format);
+			fprintf(stderr, "> %04x %04x %s!\n",
+				t->tab[i]->ins_mask[0],
+				t->tab[i]->ins[0],
+				t->tab[i]->format);
 		}
 		b1 = 0;
 	} else {
@@ -215,10 +223,10 @@ const struct vc4_opcode *vc4_get_opcode(const struct vc4_info *info, const uint8
 	}
 
 	for (i = 0; i < t->count; i++) {
-		if ((t->tab[i]->mask2 == 0) || ((b1 & t->tab[i]->mask2) == t->tab[i]->val2))
+		if ((t->tab[i]->ins_mask[1] == 0) ||
+		    ((b1 & t->tab[i]->ins_mask[1]) == t->tab[i]->ins[1]))
 			return t->tab[i];
 	}
 
 	return NULL;
 }
-

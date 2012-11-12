@@ -543,6 +543,7 @@ vc4_final_link_relocate (reloc_howto_type *howto,
     case R_VC4_PCREL_23_MUL2:
     case R_VC4_PCREL_27:
     case R_VC4_PCREL_32:
+    case R_VC4_IMM_16:
     case R_VC4_IMM_27:
     case R_VC4_IMM_32:
       contents += rel->r_offset;
@@ -587,7 +588,8 @@ vc4_final_link_relocate (reloc_howto_type *howto,
 	  break;
 
 	case R_VC4_PCREL_16:
-	  printf("Doing 16-bit rel %s!\n", __FUNCTION__);
+	case R_VC4_IMM_16:
+	  printf("Doing 16-bit %s %s!\n", howto->type == R_VC4_PCREL_16 ? "rel" : "imm", __FUNCTION__);
 	  bfd_put_16 (input_bfd, (bfd_vma)(srel & 0xffff), contents + 2);
 	  break;
 
@@ -707,7 +709,10 @@ vc4_elf_relocate_section (bfd *output_bfd,
 	  || r_type == R_VC4_GNU_VTENTRY)
 	continue;
 
-      if ((unsigned int) r_type >
+      assert((unsigned int) r_type <
+	     (sizeof vc4_elf_howto_table / sizeof (reloc_howto_type)));
+
+      if ((unsigned int) r_type >=
 	  (sizeof vc4_elf_howto_table / sizeof (reloc_howto_type)))
 	abort ();
 
