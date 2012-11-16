@@ -187,6 +187,7 @@ const struct vc4_opcode *vc4_get_opcode(const struct vc4_info *info, const uint8
 	uint16_t b1;
 	const struct vc4_opcode_tab *t;
 	size_t i;
+	int deb = 0;
 
 	if (l < 2) {
 		fprintf(stderr, "overrun 1!\n");
@@ -197,19 +198,36 @@ const struct vc4_opcode *vc4_get_opcode(const struct vc4_info *info, const uint8
 
 	b0 = vc4_get_le16(b);
 
+	if (b0 == 0xa013)
+		deb = 1;
+
 	t = info->opcodes[b0];
 	if (t == NULL)
 		return NULL;
 
-	if (t->count == 1)
-		return t->tab[0];
-
-	for (i=0; i<t->count; i++) {
-		if ((b0 & t->tab[i]->ins_mask[0]) == t->tab[i]->ins[0])
-			return t->tab[i];
+	if (deb) {
+/*
+		printf("\n");
+		for (i=0; i<t->count; i++) {
+			printf("D %04x %04x   %04x %04x  %s\n",
+			       t->tab[i]->ins_mask[0], t->tab[i]->ins[0],
+			       t->tab[i]->ins_mask[1], t->tab[i]->ins[1],
+			       t->tab[i]->format);
+		}
+*/
 	}
 
+	if (t->count == 1)
+		return t->tab[0];
+/*
+	for (i=0; i<t->count; i++) {
+		if ((b0 & t->tab[i]->ins_mask[0]) == t->tab[i]->ins[0] &&
+		    t->tab[i]->ins_mask[1] == 0)
+			return t->tab[i];
+	}
+*/
 	if (l < 4) {
+/*
 		fprintf(stderr, "overrun 2 %04x!\n", b0);
 		for (i=0; i<t->count; i++) {
 			fprintf(stderr, "> %04x %04x %s!\n",
@@ -217,14 +235,16 @@ const struct vc4_opcode *vc4_get_opcode(const struct vc4_info *info, const uint8
 				t->tab[i]->ins[0],
 				t->tab[i]->format);
 		}
+*/
 		b1 = 0;
 	} else {
 		b1 = vc4_get_le16(b + 2);
 	}
 
 	for (i = 0; i < t->count; i++) {
-		if ((t->tab[i]->ins_mask[1] == 0) ||
-		    ((b1 & t->tab[i]->ins_mask[1]) == t->tab[i]->ins[1]))
+		if (((b0 & t->tab[i]->ins_mask[0]) == t->tab[i]->ins[0]) &&
+		    ((t->tab[i]->ins_mask[1] == 0) ||
+		     (b1 & t->tab[i]->ins_mask[1]) == t->tab[i]->ins[1]))
 			return t->tab[i];
 	}
 

@@ -49,3 +49,9 @@ label:
 	push	r24
 	#push	r1
 	
+	ld	r2,(sp)
+	ld	r2,36(sp)
+
+	ld	r1,(r2,r3)
+
+	

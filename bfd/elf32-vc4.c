@@ -27,6 +27,7 @@
 #include "elf/vc4.h"
 #include "libiberty.h"
 #include <assert.h>
+#include <ctype.h>
 
 bfd_reloc_status_type
 vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
@@ -55,7 +56,7 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 FALSE),		/* pcrel_offset */
 
   /* A PC relative 7 bit relocation.  */
-  HOWTO (R_VC4_PCREL_7_MUL2,    /* type */
+  HOWTO (R_VC4_PCREL7_MUL2,    /* type */
 	 1,			/* rightshift */
 	 1,			/* size (0 = byte, 1 = short, 2 = long) */
 	 7,			/* bitsize */
@@ -63,14 +64,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_PCREL_7",       /* name */
+	 "R_VC4_PCREL7",       /* name */
 	 FALSE,			/* partial_inplace */
 	 0x0000,		/* src_mask */
 	 0x007f,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A PC relative 8 bit relocation.  */
-  HOWTO (R_VC4_PCREL_8_MUL2,      /* type */
+  HOWTO (R_VC4_PCREL8_MUL2,      /* type */
 	 1,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 8,			/* bitsize */
@@ -78,14 +79,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 16,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_PCREL_8",        /* name */
+	 "R_VC4_PCREL8",        /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0x00ff0000,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A PC relative 10 bit relocation.  */
-  HOWTO (R_VC4_PCREL_10_MUL2,   /* type */
+  HOWTO (R_VC4_PCREL10_MUL2,   /* type */
 	 1,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 10,			/* bitsize */
@@ -93,14 +94,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_PCREL_10",      /* name */
+	 "R_VC4_PCREL10",      /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0x03ff0000,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A PC relative 16 bit relocation.  */
-  HOWTO (R_VC4_PCREL_16,        /* type */
+  HOWTO (R_VC4_PCREL16,        /* type */
 	 0,			/* rightshift */
 	 1,			/* size (0 = byte, 1 = short, 2 = long) */
 	 16,			/* bitsize */
@@ -108,14 +109,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 16,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_PCREL_16",      /* name */
+	 "R_VC4_PCREL16",      /* name */
 	 FALSE,			/* partial_inplace */
 	 0x0000,		/* src_mask */
 	 0xffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A PC relative 23 bit relocation.  */
-  HOWTO (R_VC4_PCREL_23_MUL2,   /* type */
+  HOWTO (R_VC4_PCREL23_MUL2,   /* type */
 	 1,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 23,			/* bitsize */
@@ -123,14 +124,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_PCREL_23",      /* name */
+	 "R_VC4_PCREL23",      /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0x007fffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A PC relative 27 bit relocation.  */
-  HOWTO (R_VC4_PCREL_27,        /* type */
+  HOWTO (R_VC4_PCREL27,        /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 27,			/* bitsize */
@@ -138,14 +139,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_PCREL_27",      /* name */
+	 "R_VC4_PCREL27",      /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0x07ffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A PC relative 27 bit relocation.  */
-  HOWTO (R_VC4_PCREL_27_MUL2,   /* type */
+  HOWTO (R_VC4_PCREL27_MUL2,   /* type */
 	 1,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 27,			/* bitsize */
@@ -153,14 +154,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_PCREL_27",      /* name */
+	 "R_VC4_PCREL27",      /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0x07ffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A PC relative 32 bit relocation.  */
-  HOWTO (R_VC4_PCREL_32,        /* type */
+  HOWTO (R_VC4_PCREL32,        /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 32,			/* bitsize */
@@ -168,14 +169,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_PCREL_32",      /* name */
+	 "R_VC4_PCREL32",      /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 TRUE),			/* pcrel_offset */
 
   /* A absolute 5 bit relocation.  */
-  HOWTO (R_VC4_IMM_5,          /* type */
+  HOWTO (R_VC4_IMM5_1,          /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 5,			/* bitsize */
@@ -183,14 +184,29 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM_5",         /* name */
+	 "R_VC4_IMM5_1",        /* name */
+	 FALSE,			/* partial_inplace */
+	 0x00000000,		/* src_mask */
+	 0xffffffff,		/* dst_mask */
+	 FALSE),		/* pcrel_offset */
+
+  /* A absolute 5 bit relocation.  */
+  HOWTO (R_VC4_IMM5_2,         /* type */
+	 0,			/* rightshift */
+	 2,			/* size (0 = byte, 1 = short, 2 = long) */
+	 5,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_signed, /* complain_on_overflow */
+	 vc4_elf_reloc,		/* special_function */
+	 "R_VC4_IMM5_2",        /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 6 bit relocation.  */
-  HOWTO (R_VC4_IMM_6,          /* type */
+  HOWTO (R_VC4_IMM6,           /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 6,			/* bitsize */
@@ -198,14 +214,29 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM_6",         /* name */
+	 "R_VC4_IMM6",         /* name */
+	 FALSE,			/* partial_inplace */
+	 0x00000000,		/* src_mask */
+	 0xffffffff,		/* dst_mask */
+	 FALSE),		/* pcrel_offset */
+
+  /* A absolute 6 bit relocation.  */
+  HOWTO (R_VC4_IMM6_MUL4,      /* type */
+	 2,			/* rightshift */
+	 2,			/* size (0 = byte, 1 = short, 2 = long) */
+	 6,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_signed, /* complain_on_overflow */
+	 vc4_elf_reloc,		/* special_function */
+	 "R_VC4_IMM6_MUL4",     /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 11 bit relocation.  */
-  HOWTO (R_VC4_IMM_11,          /* type */
+  HOWTO (R_VC4_IMM11,          /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 11,			/* bitsize */
@@ -213,14 +244,29 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM_11",        /* name */
+	 "R_VC4_IMM11",        /* name */
+	 FALSE,			/* partial_inplace */
+	 0x00000000,		/* src_mask */
+	 0xffffffff,		/* dst_mask */
+	 FALSE),		/* pcrel_offset */
+
+  /* A absolute 12 bit relocation.  */
+  HOWTO (R_VC4_IMM12,          /* type */
+	 0,			/* rightshift */
+	 2,			/* size (0 = byte, 1 = short, 2 = long) */
+	 12,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_signed, /* complain_on_overflow */
+	 vc4_elf_reloc,		/* special_function */
+	 "R_VC4_IMM11",        /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 16 bit relocation.  */
-  HOWTO (R_VC4_IMM_16,          /* type */
+  HOWTO (R_VC4_IMM16,          /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 16,			/* bitsize */
@@ -228,14 +274,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM_16",        /* name */
+	 "R_VC4_IMM16",        /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 23 bit relocation.  */
-  HOWTO (R_VC4_IMM_23,          /* type */
+  HOWTO (R_VC4_IMM23,          /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 23,			/* bitsize */
@@ -243,14 +289,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM_23",        /* name */
+	 "R_VC4_IMM23",        /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
-  /* A absolute 32 bit relocation.  */
-  HOWTO (R_VC4_IMM_27,          /* type */
+  /* A absolute 27 bit relocation.  */
+  HOWTO (R_VC4_IMM27,           /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 27,			/* bitsize */
@@ -258,14 +304,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM_27",        /* name */
+	 "R_VC4_IMM27",        /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 32 bit relocation.  */
-  HOWTO (R_VC4_IMM_32,          /* type */
+  HOWTO (R_VC4_IMM32,          /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 32,			/* bitsize */
@@ -273,14 +319,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM_32",        /* name */
+	 "R_VC4_IMM32",        /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 32 bit relocation.  */
-  HOWTO (R_VC4_IMM_32_2,        /* type */
+  HOWTO (R_VC4_IMM32_2,        /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 32,			/* bitsize */
@@ -288,201 +334,73 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM_32_2",      /* name */
+	 "R_VC4_IMM32_2",      /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
-#if 0
-  /* A PC relative 26 bit relocation, right shifted by 2.  */
-  HOWTO (R_VC4_INSN_REL_26, /* type */
-	 2,			/* rightshift */
-	 2,			/* size (0 = byte, 1 = short, 2 = long) */
-	 26,			/* bitsize */
-	 TRUE,			/* pc_relative */
-	 0,			/* bitpos */
-	 complain_overflow_signed, /* complain_on_overflow */
-	 bfd_elf_generic_reloc,	/* special_function */
-	 "R_VC4_INSN_REL_26", /* name */
-	 FALSE,			/* partial_inplace */
-	 0x00000000,		/* src_mask */
-	 0x03ffffff,		/* dst_mask */
-	 FALSE),		/* pcrel_offset */
-
-  /* A absolute 26 bit relocation, right shifted by 2.  */
-  HOWTO (R_VC4_INSN_ABS_26, /* type */
-	 2,			/* rightshift */
-	 2,			/* size (0 = byte, 1 = short, 2 = long) */
-	 26,			/* bitsize */
-	 FALSE,			/* pc_relative */
-	 0,			/* bitpos */
-	 complain_overflow_signed, /* complain_on_overflow */
-	 bfd_elf_generic_reloc,	/* special_function */
-	 "R_VC4_INSN_ABS_26", /* name */
-	 FALSE,			/* partial_inplace */
-	 0x00000000,		/* src_mask */
-	 0x03ffffff,		/* dst_mask */
-	 FALSE),		/* pcrel_offset */
-
-  HOWTO (R_VC4_LO_16_IN_INSN, /* type */
-	 0,			/* rightshift */
-	 1,			/* size (0 = byte, 1 = short, 2 = long) */
-	 16,			/* bitsize */
-	 FALSE,			/* pc_relative */
-	 0,			/* bitpos */
-	 complain_overflow_dont, /* complain_on_overflow */
-	 bfd_elf_generic_reloc,	/* special_function */
-	 "R_VC4_LO_16_IN_INSN", /* name */
-	 FALSE,			/* partial_inplace */
-	 0,			/* src_mask */
-	 0x0000ffff,		/* dst_mask */
-	 FALSE),		/* pcrel_offset */
-
-  HOWTO (R_VC4_HI_16_IN_INSN, /* type */
-	 16,			/* rightshift */
-	 1,			/* size (0 = byte, 1 = short, 2 = long) */
-	 16,			/* bitsize */
-	 FALSE,			/* pc_relative */
-	 0,			/* bitpos */
-	 complain_overflow_dont,	/* complain_on_overflow */
-	 bfd_elf_generic_reloc,	/* special_function */
-	 "R_VC4_HI_16_IN_INSN",	/* name */
-	 FALSE,			/* partial_inplace */
-	 0,			/* src_mask */
-	 0x0000ffff,		/* dst_mask */
-	 FALSE),		/* pcrel_offset */
-
-  /* An 8 bit absolute relocation.  */
-  HOWTO (R_VC4_8,		/* type */
-	 0,			/* rightshift */
-	 0,			/* size (0 = byte, 1 = short, 2 = long) */
-	 8,			/* bitsize */
-	 FALSE,			/* pc_relative */
-	 0,			/* bitpos */
-	 complain_overflow_bitfield, /* complain_on_overflow */
-	 bfd_elf_generic_reloc,	/* special_function */
-	 "R_VC4_8",	/* name */
-	 TRUE,			/* partial_inplace */
-	 0x0000,		/* src_mask */
-	 0x00ff,		/* dst_mask */
-	 FALSE),		/* pcrel_offset */
-
-  /* A 16 bit absolute relocation.  */
-  HOWTO (R_VC4_16,		/* type */
-	 0,			/* rightshift */
-	 1,			/* size (0 = byte, 1 = short, 2 = long) */
-	 16,			/* bitsize */
-	 FALSE,			/* pc_relative */
-	 0,			/* bitpos */
-	 complain_overflow_bitfield, /* complain_on_overflow */
-	 bfd_elf_generic_reloc,	/* special_function */
-	 "R_VC4_16",	/* name */
-	 TRUE,			/* partial_inplace */
-	 0x00000000,		/* src_mask */
-	 0x0000ffff,		/* dst_mask */
-	 FALSE),		/* pcrel_offset */
-
-  /* A 32 bit absolute relocation.  */
-  HOWTO (R_VC4_32,		/* type */
-	 0,			/* rightshift */
-	 2,			/* size (0 = byte, 1 = short, 2 = long) */
-	 32,			/* bitsize */
-	 FALSE,			/* pc_relative */
-	 0,			/* bitpos */
-	 complain_overflow_bitfield, /* complain_on_overflow */
-	 bfd_elf_generic_reloc,	/* special_function */
-	 "R_VC4_32",	/* name */
-	 TRUE,			/* partial_inplace */
-	 0x00000000,		/* src_mask */
-	 0xffffffff,		/* dst_mask */
-	 FALSE),		/* pcrel_offset */
-
-  /* GNU extension to record C++ vtable hierarchy.  */
-  HOWTO (R_VC4_GNU_VTINHERIT, /* type */
-	 0,			/* rightshift */
-	 2,			/* size (0 = byte, 1 = short, 2 = long) */
-	 0,			/* bitsize */
-	 FALSE,			/* pc_relative */
-	 0,			/* bitpos */
-	 complain_overflow_dont, /* complain_on_overflow */
-	 NULL,			/* special_function */
-	 "R_VC4_GNU_VTINHERIT", /* name */
-	 FALSE,			/* partial_inplace */
-	 0,			/* src_mask */
-	 0,			/* dst_mask */
-	 FALSE),		/* pcrel_offset */
-
-  /* GNU extension to record C++ vtable member usage.  */
-  HOWTO (R_VC4_GNU_VTENTRY, /* type */
-	 0,			/* rightshift */
-	 2,			/* size (0 = byte, 1 = short, 2 = long) */
-	 0,			/* bitsize */
-	 FALSE,			/* pc_relative */
-	 0,			/* bitpos */
-	 complain_overflow_dont, /* complain_on_overflow */
-	 _bfd_elf_rel_vtable_reloc_fn, /* special_function */
-	 "R_VC4_GNU_VTENTRY", /* name */
-	 FALSE,			/* partial_inplace */
-	 0,			/* src_mask */
-	 0,			/* dst_mask */
-	 FALSE),		/* pcrel_offset */
-#endif
 };
 
 /* Map BFD reloc types to Vc4 ELF reloc types.  */
 
-struct vc4_reloc_map
+struct vc4_bfd_fixup_table
 {
+  char code;
+  int pc_rel;
+  int divide;
+  const char *str;
   bfd_reloc_code_real_type bfd_reloc_val;
   unsigned int vc4_reloc_val;
 };
 
-static const struct vc4_reloc_map vc4_reloc_map[] =
+struct vc4_bfd_fixup_table2
 {
-  { BFD_RELOC_NONE, 		R_VC4_NONE },
-  { BFD_RELOC_VC4_REL7_MUL2,	R_VC4_PCREL_7_MUL2 },
-  { BFD_RELOC_VC4_REL8_MUL2,	R_VC4_PCREL_8_MUL2 },
-  { BFD_RELOC_VC4_REL10_MUL2,	R_VC4_PCREL_10_MUL2 },
-  { BFD_RELOC_VC4_REL16,	R_VC4_PCREL_16 },
-  { BFD_RELOC_VC4_REL23_MUL2,	R_VC4_PCREL_23_MUL2 },
-  { BFD_RELOC_VC4_REL27,	R_VC4_PCREL_27 },
-  { BFD_RELOC_VC4_REL27_MUL2,	R_VC4_PCREL_27_MUL2 },
-  { BFD_RELOC_VC4_REL32,	R_VC4_PCREL_32 },
-
-  { BFD_RELOC_VC4_IMM5,		R_VC4_IMM_5 },
-  { BFD_RELOC_VC4_IMM6,		R_VC4_IMM_6 },
-  { BFD_RELOC_VC4_IMM11,	R_VC4_IMM_11 },
-  { BFD_RELOC_VC4_IMM16,	R_VC4_IMM_16 },
-  { BFD_RELOC_VC4_IMM23,	R_VC4_IMM_23 },
-  { BFD_RELOC_VC4_IMM27,	R_VC4_IMM_27 },
-  { BFD_RELOC_VC4_IMM32,	R_VC4_IMM_32 },
-  { BFD_RELOC_VC4_IMM32_2,	R_VC4_IMM_32_2 },
-
-#if 0
-  { BFD_RELOC_32, 		R_VC4_32 },
-  { BFD_RELOC_16, 		R_VC4_16 },
-  { BFD_RELOC_8, 		R_VC4_8 },
-  { BFD_RELOC_HI16, 		R_VC4_HI_16_IN_INSN },
-  { BFD_RELOC_LO16, 		R_VC4_LO_16_IN_INSN },
-#endif
-  { BFD_RELOC_VTABLE_INHERIT,	R_VC4_GNU_VTINHERIT },
-  { BFD_RELOC_VTABLE_ENTRY, 	R_VC4_GNU_VTENTRY }
+  size_t width;
+  size_t length;
+  uint128_t mask;
 };
+
+static const struct vc4_bfd_fixup_table bfd_fixup_table[] =
+  {
+    { ' ', 0, 0, "", BFD_RELOC_NONE, R_VC4_NONE },
+    { 'o', 1, 2, "0001 1ccc cooo oooo", BFD_RELOC_VC4_REL7_MUL2, R_VC4_PCREL7_MUL2 }, /* b%s<c> 0x%08x<$+o*2> */
+    { 'o', 1, 2, "1000 cccc aaaa dddd 10uu uuuu oooo oooo", BFD_RELOC_VC4_REL8_MUL2, R_VC4_PCREL8_MUL2 }, /* addcmpb%s<c> r%i<d>, r%i<a>, #%i<u>, 0x%08x<$+o*2> */
+    { 'o', 1, 2, "1000 cccc aaaa dddd 00ss ssoo oooo oooo", BFD_RELOC_VC4_REL10_MUL2, R_VC4_PCREL10_MUL2 }, /*  */
+    { 'o', 1, 1, "1011 1111 111d dddd oooo oooo oooo oooo", BFD_RELOC_VC4_REL16, R_VC4_PCREL16 }, /*  */
+    { 'o', 1, 2, "1001 cccc 0ooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL23_MUL2, R_VC4_PCREL23_MUL2}, /*  */
+    { 'o', 1, 1, "1110 0111 ww0d dddd 1111 1ooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL27, R_VC4_PCREL27 }, /*  */
+    { 'o', 1, 2, "1001 oooo 1ooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL27_MUL2, R_VC4_PCREL27_MUL2 }, /*  */
+    { 'o', 1, 1, "1110 0101 000d dddd oooo oooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL32, R_VC4_PCREL32 }, /*  */
+    { 'o', 0, 1, "0000 010o oooo dddd", BFD_RELOC_VC4_IMM5_1, R_VC4_IMM5_1 }, /*  */
+    { 'u', 0, 1, "1010 0000 ww1d dddd aaaa accc c10u uuuu", BFD_RELOC_VC4_IMM5_2, R_VC4_IMM5_2 }, /*  */
+    { ' ', 0, 1, "", BFD_RELOC_VC4_IMM6, R_VC4_IMM6 }, /*  */
+    { 'o', 0, 4, "0001 0ooo ooo1 1001", BFD_RELOC_VC4_IMM6_MUL4, R_VC4_IMM6_MUL4 }, /*  */
+    { 'x', 0, 1, "1111 0xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy", BFD_RELOC_VC4_IMM11, R_VC4_IMM11 }, /*  */
+    { 'o', 0, 1, "1010 001o ww0d dddd ssss sooo oooo oooo", BFD_RELOC_VC4_IMM12, R_VC4_IMM12 }, /*  */
+    { 'o', 0, 1, "1010 1000 ww0d dddd oooo oooo oooo oooo", BFD_RELOC_VC4_IMM16, R_VC4_IMM16 }, /*  */
+    { ' ', 0, 0, "", BFD_RELOC_VC4_IMM23, R_VC4_IMM23 }, /*  */
+    { 'o', 0, 1, "1110 0111 ww0d dddd ssss sooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_IMM27, R_VC4_IMM27 }, /*  */
+    { 'u', 0, 1, "1110 0000 ssss dddd uuuu uuuu uuuu uuuu uuuu uuuu uuuu uuuu", BFD_RELOC_VC4_IMM32, R_VC4_IMM32 }, /*  */
+    { 'z', 0, 1, "1111 1xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy zzzz zzzz zzzz zzzz zzzz zzzz zzzz zzzz", BFD_RELOC_VC4_IMM32_2, R_VC4_IMM32_2 }, /*  */
+  };
+#define BFD_FIXUP_COUNT ARRAY_SIZE(bfd_fixup_table)
+
+static struct vc4_bfd_fixup_table2 bfd_fixup_table2[BFD_FIXUP_COUNT];
 
 static reloc_howto_type *
 vc4_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
-			    bfd_reloc_code_real_type code)
+		       bfd_reloc_code_real_type code)
 {
   unsigned int i;
 
-  for (i = ARRAY_SIZE (vc4_reloc_map); --i;)
-    if (vc4_reloc_map[i].bfd_reloc_val == code) {
-      unsigned int val = vc4_reloc_map[i].vc4_reloc_val;
+  for (i = ARRAY_SIZE(bfd_fixup_table); --i;)
+    if (bfd_fixup_table[i].bfd_reloc_val == code) {
+      unsigned int val = bfd_fixup_table[i].vc4_reloc_val;
       printf("%s %d %d %d\n", __FUNCTION__, code, val, vc4_elf_howto_table[val].type);
 
       assert(vc4_elf_howto_table[val].type == val);
 
-      return & vc4_elf_howto_table[val];
+      return &vc4_elf_howto_table[val];
     }
 
   return NULL;
@@ -490,16 +408,13 @@ vc4_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
 
 static reloc_howto_type *
 vc4_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
-			    const char *r_name)
+		       const char *r_name)
 {
   unsigned int i;
 
-  for (i = 0;
-       i < (sizeof (vc4_elf_howto_table)
-	    / sizeof (vc4_elf_howto_table[0]));
-       i++)
-    if (vc4_elf_howto_table[i].name != NULL
-	&& strcasecmp (vc4_elf_howto_table[i].name, r_name) == 0)
+  for (i = 0; i < ARRAY_SIZE(vc4_elf_howto_table); i++)
+    if (vc4_elf_howto_table[i].name != NULL &&
+	strcasecmp(vc4_elf_howto_table[i].name, r_name) == 0)
       return &vc4_elf_howto_table[i];
 
   return NULL;
@@ -509,14 +424,64 @@ vc4_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
 
 static void
 vc4_info_to_howto_rela (bfd * abfd ATTRIBUTE_UNUSED,
-			     arelent * cache_ptr,
-			     Elf_Internal_Rela * dst)
+			arelent * cache_ptr,
+			Elf_Internal_Rela * dst)
 {
   unsigned int r_type;
 
   r_type = ELF32_R_TYPE (dst->r_info);
   BFD_ASSERT (r_type < (unsigned int) R_VC4_max);
   cache_ptr->howto = & vc4_elf_howto_table[r_type];
+}
+
+static void make_tab2(void);
+
+static void vc4_poke_reloc_value(bfd *input_bfd, bfd_byte *contents, unsigned int type, bfd_signed_vma srel)
+{
+  size_t i, len;
+  uint16_t ins[5];
+
+  make_tab2();
+
+  switch (type)
+    {
+    case R_VC4_PCREL7_MUL2:
+    case R_VC4_PCREL8_MUL2:
+    case R_VC4_PCREL10_MUL2:
+    case R_VC4_PCREL16:
+    case R_VC4_PCREL23_MUL2:
+    case R_VC4_PCREL27:
+    case R_VC4_PCREL27_MUL2:
+    case R_VC4_PCREL32:
+    case R_VC4_IMM5_1:
+    case R_VC4_IMM5_2:
+    case R_VC4_IMM6:
+    case R_VC4_IMM6_MUL4:
+    case R_VC4_IMM11:
+    case R_VC4_IMM12:
+    case R_VC4_IMM16:
+    case R_VC4_IMM23:
+    case R_VC4_IMM27:
+    case R_VC4_IMM32:
+    case R_VC4_IMM32_2:
+      len = vc4_bfd_fixup_get_length(type);
+	  
+      for (i = 0; i < len; i++) {
+	ins[i] = bfd_get_16(input_bfd, contents + i * 2);
+      }
+
+      vc4_bfd_fixup_set(bfd_fixup_table[type].bfd_reloc_val, ins, srel);
+
+      for (i = 0; i < len; i++) {
+	bfd_put_16(input_bfd, ins[i], contents + i * 2);
+      }
+      break;
+
+    default:
+      printf("bad %s!\n", __FUNCTION__);
+      abort();
+      break;
+    }
 }
 
 /* Perform a single relocation.  By default we use the standard BFD
@@ -531,21 +496,30 @@ vc4_final_link_relocate (reloc_howto_type *howto,
 			 bfd_vma relocation)
 {
   bfd_reloc_status_type r = bfd_reloc_ok;
-  bfd_vma x;
   bfd_signed_vma srel;
 
   switch (howto->type)
     {
-    case R_VC4_PCREL_7_MUL2:
-    case R_VC4_PCREL_8_MUL2:
-    case R_VC4_PCREL_10_MUL2:
-    case R_VC4_PCREL_16:
-    case R_VC4_PCREL_23_MUL2:
-    case R_VC4_PCREL_27:
-    case R_VC4_PCREL_32:
-    case R_VC4_IMM_16:
-    case R_VC4_IMM_27:
-    case R_VC4_IMM_32:
+    case R_VC4_PCREL7_MUL2:
+    case R_VC4_PCREL8_MUL2:
+    case R_VC4_PCREL10_MUL2:
+    case R_VC4_PCREL16:
+    case R_VC4_PCREL23_MUL2:
+    case R_VC4_PCREL27:
+    case R_VC4_PCREL27_MUL2:
+    case R_VC4_PCREL32:
+    case R_VC4_IMM5_1:
+    case R_VC4_IMM5_2:
+    case R_VC4_IMM6:
+    case R_VC4_IMM6_MUL4:
+    case R_VC4_IMM11:
+    case R_VC4_IMM12:
+    case R_VC4_IMM16:
+    case R_VC4_IMM23:
+    case R_VC4_IMM27:
+    case R_VC4_IMM32:
+    case R_VC4_IMM32_2:
+
       contents += rel->r_offset;
       srel = (bfd_signed_vma) relocation;
       srel += rel->r_addend;
@@ -562,71 +536,16 @@ vc4_final_link_relocate (reloc_howto_type *howto,
 	  if (srel & 1)
 	    return bfd_reloc_outofrange;
 	  srel >>= 1;
+	  if (howto->rightshift > 1)
+	    {
+	      if (srel & 1)
+		return bfd_reloc_outofrange;
+	      srel >>= 1;
+	    }
 	}
 
-      switch (howto->type)
-	{
-	case R_VC4_PCREL_7_MUL2:
-	  printf("Doing 7-bit rel %s!\n", __FUNCTION__);
-	  x = bfd_get_16 (input_bfd, contents);
-	  x = (x & 0xff80) | (srel & 0x7f);
-	  bfd_put_16 (input_bfd, x, contents);
-	  break;
+      vc4_poke_reloc_value(input_bfd, contents, howto->type, srel);
 
-	case R_VC4_PCREL_8_MUL2:
-	  printf("Doing 8-bit rel %s!\n", __FUNCTION__);
-	  x = bfd_get_16 (input_bfd, contents + 2);
-	  x = (x & 0xff00) | (srel & 0xff);
-	  bfd_put_16 (input_bfd, x, contents + 2);
-	  break;
-
-	case R_VC4_PCREL_10_MUL2:
-	  printf("Doing 10-bit rel %s!\n", __FUNCTION__);
-	  x = bfd_get_16 (input_bfd, contents + 2);
-	  x = (x & 0xfc00) | (srel & 0x3ff);
-	  bfd_put_16 (input_bfd, x, contents + 2);
-	  break;
-
-	case R_VC4_PCREL_16:
-	case R_VC4_IMM_16:
-	  printf("Doing 16-bit %s %s!\n", howto->type == R_VC4_PCREL_16 ? "rel" : "imm", __FUNCTION__);
-	  bfd_put_16 (input_bfd, (bfd_vma)(srel & 0xffff), contents + 2);
-	  break;
-
-	case R_VC4_PCREL_23_MUL2:
-	  printf("Doing 23-bit rel %s!\n", __FUNCTION__);
-	  x = bfd_get_16 (input_bfd, contents);
-	  x = (x & 0xff80) | ((srel >> 16) & 0x7f);
-	  bfd_put_16 (input_bfd, x, contents);
-	  bfd_put_16 (input_bfd, (bfd_vma)(srel & 0xffff), contents + 2);
-	  break;
-
-	case R_VC4_PCREL_27:
-	case R_VC4_IMM_27:
-	  printf("Doing 27-bit %s %s!\n", howto->type == R_VC4_PCREL_27 ? "rel" : "imm", __FUNCTION__);
-	  x = bfd_get_16 (input_bfd, contents + 2);
-	  x = (x & 0xf800) | ((srel >> 16) & 0x7ff);
-	  bfd_put_16 (input_bfd, x, contents + 2);
-	  bfd_put_16 (input_bfd, (bfd_vma)(srel & 0xffff), contents + 4);
-	  break;
-
-	case R_VC4_PCREL_32:
-	  printf("Doing 32-bit rel %s!\n", __FUNCTION__);
-	  bfd_put_16 (input_bfd, (bfd_vma)(srel & 0xffff), contents + 2);
-	  bfd_put_16 (input_bfd, (bfd_vma)((srel >> 16) & 0xffff), contents + 4);
-	  break;
-
-	case R_VC4_IMM_32:
-	  printf("Doing 32-bit imm %s!\n", __FUNCTION__);
-	  bfd_put_16 (input_bfd, (bfd_vma)(srel & 0xffff), contents + 2);
-	  bfd_put_16 (input_bfd, (bfd_vma)((srel >> 16) & 0xffff), contents + 4);
-	  break;
-
-	default:
-	  printf("bad %s!\n", __FUNCTION__);
-	  abort();
-	  break;
-	}
       break;
 
     default:
@@ -812,7 +731,6 @@ vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
   bfd_vma output_base = 0;
   reloc_howto_type *howto = reloc_entry->howto;
   asection *reloc_target_output_section;
-  short x;
 
   printf("%s\n", __FUNCTION__);
 
@@ -937,6 +855,7 @@ vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
      machine word.
      FIXME: We should also do overflow checking on the result after
      adding in the value contained in the object file.  */
+
   if (howto->complain_on_overflow != complain_overflow_dont
       && flag == bfd_reloc_ok)
     flag = bfd_check_overflow (howto->complain_on_overflow,
@@ -945,38 +864,9 @@ vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
 			       bfd_arch_bits_per_address (abfd),
 			       relocation);
 
-
   printf("%s %d\n", __FUNCTION__, (int)relocation);
 
-  switch (howto->type)
-    {
-    case R_VC4_PCREL_23_MUL2:
-      printf("Doing 23-bit rel %s!\n", __FUNCTION__);
-      x = bfd_get_16 (abfd, (bfd_byte *) data + octets);
-      x = (x & 0xff80) | ((relocation >> 16) & 0x7f);
-      bfd_put_16 (abfd, (bfd_vma) x, (unsigned char *) data + octets);
-      bfd_put_16 (abfd, (bfd_vma) (relocation & 0xffff), (unsigned char *) data + octets + 2);
-      break;
-
-    case R_VC4_PCREL_27:
-      printf("Doing 27-bit rel %s!\n", __FUNCTION__);
-      x = bfd_get_16 (abfd, (bfd_byte *) data + octets + 2);
-      x = (x & 0xf800) | ((relocation >> 16) & 0x7ff);
-      bfd_put_16 (abfd, (bfd_vma) x, (unsigned char *) data + octets + 2);
-      bfd_put_16 (abfd, (bfd_vma) (relocation & 0xffff), (unsigned char *) data + octets + 4);
-      break;
-
-    case R_VC4_PCREL_32:
-      printf("Doing 32-bit rel %s!\n", __FUNCTION__);
-      bfd_put_16 (abfd, (bfd_vma) (relocation & 0xffff), (unsigned char *) data + octets + 2);
-      bfd_put_16 (abfd, (bfd_vma) ((relocation >> 16) & 0xffff), (unsigned char *) data + octets + 4);
-      break;
-
-    default:
-      printf("Bad reloc type!! %d %s\n", howto->type, howto->name);
-      abort();
-      break;
-    }
+  vc4_poke_reloc_value(abfd, (unsigned char *) data + octets, howto->type, relocation);
 
   return flag;
 }
@@ -1091,6 +981,272 @@ vc4_elf_final_write_processing (bfd *abfd,
 
   elf_elfheader (abfd)->e_flags &= ~0xf;
   elf_elfheader (abfd)->e_flags |= val;
+}
+
+
+void uint128_shl(uint128_t *v, size_t count)
+{
+  while (count-- != 0) {
+    v->hi <<= 1;
+    if ((v->lo & (1uLL << 63)) != 0) {
+      v->hi |= 1uLL;
+    }
+    v->lo <<= 1;
+  }
+}
+
+void uint128_shr(uint128_t *v, size_t count)
+{
+  while (count-- != 0) {
+    v->lo >>= 1;
+    if ((v->hi & 1u) != 0) {
+      v->lo |= (1uLL << 63);
+    }
+    v->hi >>= 1;
+  }
+}
+
+static int bfd_fixup_table_done;
+
+static void string_to_mask(const char *str, char code, uint128_t *maskp, size_t *lengthp)
+{
+  uint128_t mask;
+  size_t length, count;
+  uint16_t wm, wc, i;
+  uint128_t mask2;
+
+  mask.hi = mask.lo = 0;
+  mask2.hi = mask2.lo = 0;
+  length = 0;
+  count = 0;
+  wm = 0x8000;
+  wc = 0;
+  i = 0;
+  for (; *str; str++ ) {
+    if (isblank(*str)) {
+      continue;
+    }
+
+    if (*str == code) {
+      wc |= wm;
+      length++;
+    }
+    count++;
+
+    wm >>= 1;
+    if (wm == 0) {
+      mask2.hi = 0;
+      mask2.lo = wc;
+      uint128_shl(&mask2, i * 16);
+      mask.lo |= mask2.lo;
+      mask.hi |= mask2.hi;
+      wm = 0x8000;
+      wc = 0;
+      i++;
+    }
+  }
+
+  assert(wm == 0x8000);
+  assert((count % 16) == 0);
+
+  if (lengthp != NULL) 
+    *lengthp = length;
+
+  if (maskp != NULL)
+    *maskp = mask;
+}
+
+static void make_tab2(void)
+{
+  size_t i;
+  uint128_t mask;
+  size_t len;
+
+  if (bfd_fixup_table_done)
+    return;
+  bfd_fixup_table_done = 1;
+
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+
+    assert(i == bfd_fixup_table[i].vc4_reloc_val);
+    assert(i == vc4_elf_howto_table[i].type);
+
+    string_to_mask(bfd_fixup_table[i].str,
+		   bfd_fixup_table[i].code,
+		   &bfd_fixup_table2[i].mask,
+		   &bfd_fixup_table2[i].width);
+
+    if (strlen(bfd_fixup_table[i].str) == 0)
+      continue;
+      
+    mask = bfd_fixup_table2[i].mask;
+    len = 0;
+    while (mask.hi != 0 || mask.lo != 0) {
+      len++;
+      uint128_shr(&mask, 16);
+    }
+    if (len == 0) {
+      fprintf(stderr, "Bad len %d %d %llx:%llx\n",
+	      bfd_fixup_table[i].bfd_reloc_val, i,
+	      bfd_fixup_table2[i].mask.hi,
+	      bfd_fixup_table2[i].mask.lo);
+    }
+    assert(len > 0 && len <= 5);
+    bfd_fixup_table2[i].length = len;
+  }
+/*
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    printf("TAB %4d %2d %d %016llx%016llx %-20s %s\n",
+	   bfd_fixup_table[i].bfd_reloc_val, i,
+	   bfd_fixup_table2[i].length,
+	   bfd_fixup_table2[i].mask.hi,
+	   bfd_fixup_table2[i].mask.lo,
+	   vc4_elf_howto_table[i].name,
+	   bfd_fixup_table[i].str);
+  }
+*/
+}
+
+bfd_reloc_code_real_type vc4_bfd_fixup_get(const char *str, char code, int pc_rel, int divide)
+{
+  size_t i;
+  uint128_t mask;
+  size_t width;
+
+  string_to_mask(str, code, &mask, &width);
+
+  make_tab2();
+
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    if (mask.hi == bfd_fixup_table2[i].mask.hi &&
+	mask.lo == bfd_fixup_table2[i].mask.lo &&
+	width == bfd_fixup_table2[i].width &&
+	pc_rel == bfd_fixup_table[i].pc_rel &&
+	divide == bfd_fixup_table[i].divide) {
+      return bfd_fixup_table[i].bfd_reloc_val;
+    }
+  }
+
+  return 0;
+}
+
+size_t vc4_bfd_fixup_get_elf(bfd_reloc_code_real_type bfd_fixup)
+{
+  size_t i;
+
+  make_tab2();
+
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
+      return i;
+    }
+  }
+
+  return R_VC4_NONE;
+}
+
+size_t vc4_bfd_fixup_get_width(bfd_reloc_code_real_type bfd_fixup)
+{
+  size_t i;
+
+  make_tab2();
+
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
+      return bfd_fixup_table2[i].width;
+    }
+  }
+
+  return 0;
+}
+
+size_t vc4_bfd_fixup_get_divide(bfd_reloc_code_real_type bfd_fixup)
+{
+  size_t i;
+
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
+      return bfd_fixup_table[i].divide;
+    }
+  }
+
+  return 0;
+}
+
+size_t vc4_bfd_fixup_get_length(bfd_reloc_code_real_type bfd_fixup)
+{
+  size_t i;
+
+  make_tab2();
+
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
+      return bfd_fixup_table2[i].length;
+    }
+  }
+
+  return 0;
+}
+
+uint128_t vc4_bfd_fixup_get_mask(bfd_reloc_code_real_type bfd_fixup)
+{
+  size_t i;
+  uint128_t mask = {0,0};
+
+  make_tab2();
+
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
+      return bfd_fixup_table2[i].mask;
+    }
+  }
+
+  return mask;
+}
+
+static char *dump_uint16s(char *buf, const uint16_t *dat, size_t len)
+{
+  size_t i, o;
+
+  for (i = 0, o = 0; i < len; i++) {
+    o += sprintf(buf + o, " %04x", dat[i]);
+  }
+  return buf + 1;
+}
+
+void vc4_bfd_fixup_set(bfd_reloc_code_real_type bfd_fixup, uint16_t *ins, long val)
+{
+  uint128_t mask = vc4_bfd_fixup_get_mask(bfd_fixup);
+  size_t len = vc4_bfd_fixup_get_length(bfd_fixup);
+  size_t word_pos = 0;
+  uint16_t bit_pos = 1;
+  char buf[80];
+
+  printf("%s: %s = %ld (%d)  %llx%llx\n", __func__,
+	 dump_uint16s(buf, ins, len),
+	 val, bfd_fixup, mask.hi, mask.lo);
+
+  while (mask.hi != 0 || mask.lo != 0) {
+
+    if (mask.lo & 1) {
+      if (val & 1) {
+	ins[word_pos] |= bit_pos;
+      } else {
+	ins[word_pos] &= ~bit_pos;
+      }
+      val >>= 1;
+    }
+
+    uint128_shr(&mask, 1);
+
+    bit_pos <<= 1;
+    if (bit_pos == 0) {
+      bit_pos = 0x0001;
+      word_pos++;
+    }
+  }
+
+  printf("%s: %s done\n", __func__, dump_uint16s(buf, ins, len));
 }
 
 

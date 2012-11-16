@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <assert.h>
+#include "elf/vc4.h"
 
 const char comment_chars[]        = "#";
 const char line_comment_chars[]   = "#";
@@ -58,21 +59,20 @@ md_show_usage (FILE * stream ATTRIBUTE_UNUSED)
 {
 }
 
+/*
 static void
 ignore_pseudo (int val ATTRIBUTE_UNUSED)
 {
   discard_rest_of_line ();
 }
+*/
 
-const char vc4_comment_chars [] = ";#";
+const char vc4_comment_chars[] = ";#";
 
 /* The target specific pseudo-ops which we support.  */
 const pseudo_typeS md_pseudo_table[] =
 {
-  { "word",     cons,           4 },
-  { "proc",     ignore_pseudo,  0 },
-  { "endproc",  ignore_pseudo,  0 },
-  { NULL, 	NULL, 		0 }
+  {0, 0, 0}
 };
 
 #define UNUSED(x) ((void)&x)
@@ -116,7 +116,6 @@ void
 md_begin (void)
 {
   struct vc4_asm *a;
-  /*char buf[256];*/
 
   if (vc4_info == NULL) {
     vc4_info = vc4_read_arch_file(
@@ -127,8 +126,6 @@ md_begin (void)
   vc4_hash = hash_new();
 
   for (a = vc4_info->all_asms; a != NULL; a = a->next_all) {
-
-    /*printf("%s\n", dump_asm_name(a, buf));*/
 
     struct vc4_asm *o = (struct vc4_asm *) hash_find(vc4_hash, a->str);
     a->next = o;
@@ -180,6 +177,8 @@ enum op_type
     ot_reg_addr_pi,
     ot_reg_addr_pd,
     ot_reg_addr_offset,
+    ot_2reg_addr_begin,
+    ot_2reg_addr_end,
     ot_num,
     ot_reg_shl,
     ot_reg_lsr
@@ -195,12 +194,64 @@ struct op_info
 
 static char *exp_print(const expressionS *exp, char *buf)
 {
-  sprintf(buf, "{%d %p %p %u:0x%08x}",
-	  exp->X_op,
-	  exp->X_add_symbol,
-	  exp->X_op_symbol,
-	  (unsigned)exp->X_add_number,
-	  (unsigned)exp->X_add_number);
+  const char *add;
+  const char *op;
+
+  if (exp == NULL) {
+    strcpy(buf, "");
+    return buf;
+  }
+
+  add = (exp->X_add_symbol && S_GET_NAME(exp->X_add_symbol)) ?
+    S_GET_NAME(exp->X_add_symbol) : "";
+  op = (exp->X_op_symbol && S_GET_NAME(exp->X_op_symbol)) ?
+    S_GET_NAME(exp->X_op_symbol) : "";
+
+  switch (exp->X_op) {
+  case O_constant:
+    assert(exp->X_op_symbol == NULL);
+    assert(exp->X_add_symbol == NULL);
+    sprintf(buf, "{%s %u:0x%08x}", "O_constant",
+	    (unsigned)exp->X_add_number,
+	    (unsigned)exp->X_add_number);
+    break;
+
+  case O_symbol:
+    assert(exp->X_op_symbol == NULL);
+    if (exp->X_add_number == 0) {
+      sprintf(buf, "{%s %p:%s}", "O_symbol",
+	      exp->X_add_symbol, add);
+    } else {
+      sprintf(buf, "{%s %p:%s %u:0x%08x}", "O_symbol",
+	      exp->X_add_symbol, add,
+	      (unsigned)exp->X_add_number,
+	      (unsigned)exp->X_add_number);
+    }
+    break;
+
+  case O_subtract:
+    if (exp->X_add_number == 0) {
+      sprintf(buf, "{%s %p:%s %p:%s}", "O_subtract",
+	      exp->X_add_symbol, add,
+	      exp->X_op_symbol, op);
+    } else {
+      sprintf(buf, "{%s %p:%s %p:%s %u:0x%08x}", "O_subtract",
+	      exp->X_add_symbol, add,
+	      exp->X_op_symbol, op,
+	      (unsigned)exp->X_add_number,
+	      (unsigned)exp->X_add_number);
+    }
+    break;
+
+  default:
+    sprintf(buf, "{%d %p:%s %p:%s %u:0x%08x}",
+	    exp->X_op,
+	    exp->X_add_symbol, add,
+	    exp->X_op_symbol, op,
+	    (unsigned)exp->X_add_number,
+	    (unsigned)exp->X_add_number);
+    break;
+  }
   return buf;
 }
 
@@ -217,6 +268,8 @@ static char *print_op_info(const struct op_info *inf, char *buf)
     case ot_reg_addr:        sprintf(buf, "(r%d)", inf->reg); break;
     case ot_reg_addr_pi:     sprintf(buf, "(r%d)++", inf->reg); break;
     case ot_reg_addr_pd:     sprintf(buf, "--(r%d)", inf->reg); break;
+    case ot_2reg_addr_begin: sprintf(buf, "(r%d", inf->reg); break;
+    case ot_2reg_addr_end:   sprintf(buf, "r%d)", inf->reg); break;
 
     case ot_reg_shl:
       sprintf(buf, "r%d shl %s",
@@ -251,14 +304,14 @@ static char *print_op_info(const struct op_info *inf, char *buf)
 static char *match_reg(char *str, int *num)
 {
   int r;
-  size_t l;
+  int l = -1;
   int reg;
 
   if (str[0] == 'r' && isdigit(str[1])) {
 
     r = sscanf(str, "r%d%n", &reg, &l);
 
-    if (r >= 1) {
+    if (r >= 1 && l > 0 && !isalnum(str[l])) {
       str += l;
       str = skip_space(str);
       *num = reg;
@@ -306,21 +359,6 @@ static uint32_t vc4_log2(uint32_t v)
     w--;
   }
   return w;
-  /*
-  if (v & 0x80000000)
-    return 1 + vc4_log2(~v);
-  if (v & 0xffff0000)
-    return 16 + vc4_log2(v >> 16);
-  if (v & 0xff00)
-    return 8 + vc4_log2(v >> 8);
-  if (v & 0xf0)
-    return 4 + vc4_log2(v >> 4);
-  if (v & 0xc)
-    return 2 + vc4_log2(v >> 2);
-  if (v & 0x2)
-    return 1 + vc4_log2(v >> 1);
-  return 1;
-  */
 }
 
 static char *vc4_get_operand(char *str, struct op_info *inf)
@@ -355,7 +393,7 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	return str;
       }
     }
-    else if (strncmp(str, "shl", 3) == 0) {
+    else if (strncmp(str, "shl", 3) == 0 && !isalnum(str[3])) {
       str += 3;
       str = skip_space(str);
 
@@ -373,7 +411,7 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	return str;
       }
     }
-    else if (strncmp(str, "lsr", 3) == 0) {
+    else if (strncmp(str, "lsr", 3) == 0 && !isalnum(str[3])) {
       str += 3;
       str = skip_space(str);
       
@@ -391,7 +429,12 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	return str;
       }
     }
-    else {
+    else if (*str == ')') {
+      str++;
+      inf->type = ot_2reg_addr_end;
+      inf->reg = reg;
+      return str;
+    } else {
       return NULL;
     }
   }
@@ -421,6 +464,10 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	  inf->reg = reg;
 	  return str;
 	}
+      } else if (*str == ',') {
+	  inf->type = ot_2reg_addr_begin;
+	  inf->reg = reg;
+	  return str;
       }
     }
   }
@@ -470,7 +517,7 @@ vc4_operands (char **line, struct op_info *ops)
 {
   char *str = skip_space(*line);
   int i;
-  const int max_ops = 3;
+  const int max_ops = 5;
   char buf[256];
 
   if (*str == 0) {
@@ -503,197 +550,109 @@ vc4_operands (char **line, struct op_info *ops)
 
 #include <ctype.h>
 
-#define VC4_PX_NAME(n, s, p) # n,
-static const char *const vc4_param_type_name[] =
-  {
-    "unknown",
-    VC4_PX_LIST(NAME)
-    "MAX" 
-  };
+struct match_ops {
+  enum vc4_param_type pt;
+  enum op_type ot;
+  uint32_t reg_bitmap;
+  int width_match;
+};
 
-static int match_op_info_to_vc4_asm_item(struct vc4_param *param, struct op_info *ops)
+static const struct match_ops match_ops_data[] =
 {
-  printf("match %d[%s] = %d %d %u\n",
-	 param->type, vc4_param_type_name[param->type], ops->type, ops->reg, ops->width);
+  { vc4_p_reg_0_31,             ot_reg,         	0, 0 },
+  { vc4_p_reg_0_15,             ot_reg,         	0xFFFFu, 0 },
+  { vc4_p_reg_0_6_16_24,        ot_reg,         	(1u << 0) | (1u << 6) | (1u << 16) | (1u << 24), 0 },
+  { vc4_p_reg_r6,               ot_reg,         	(1u << 6), 0 },
+  { vc4_p_reg_sp,               ot_reg,        	 	(1u << 25), 0 },
+  { vc4_p_reg_lr,               ot_reg,        	 	(1u << 26), 0 },
+  { vc4_p_reg_sr,               ot_reg,         	(1u << 30), 0 },
+  { vc4_p_reg_pc,               ot_reg,         	(1u << 31), 0 },
+  { vc4_p_reg_cpuid,            ot_cpuid,       	0, 0 },
+  { vc4_p_reg_range,            ot_reg_range,   	(1u << 0) | (1u << 6) | (1u << 16) | (1u << 24), 0 },
+  { vc4_p_reg_range_r6,         ot_reg_range,   	(1u << 6) , 0 },
+  { vc4_p_reg_shl,              ot_reg_shl,     	0, 0 },
+  { vc4_p_reg_shl_p1,           ot_reg_shl,     	0, 0 },
+  { vc4_p_reg_lsr,              ot_reg_lsr,     	0, 0 },
+  { vc4_p_reg_lsr_p1,           ot_reg_lsr,     	0, 0 },
+  { vc4_p_reg_shl_8,            ot_reg_shl,     	0, 0 },
+  { vc4_p_num_u,                ot_num,         	0, 1 },
+  { vc4_p_num_s,                ot_num,         	0, 1 },
+  { vc4_p_num_u4,               ot_num,         	0, 4 },
+  { vc4_p_num_s4,               ot_num,         	0, 4 },
+  { vc4_p_addr_reg_0_15,        ot_reg_addr,    	0xFFFFu, 0 },
+  { vc4_p_addr_reg_0_31,        ot_reg_addr,    	0, 0 },
+  { vc4_p_addr_2reg_begin_0_31, ot_2reg_addr_begin, 	0, 0 },
+  { vc4_p_addr_2reg_end_0_31,   ot_2reg_addr_end, 	0, 0 },
+  { vc4_p_addr_reg_num_u,       ot_reg_addr,    	0, 0 },
+  { vc4_p_addr_reg_num_u,       ot_reg_addr_offset,	0, 1 },
+  { vc4_p_addr_reg_num_s,       ot_reg_addr,    	0, 0 },
+  { vc4_p_addr_reg_num_s,       ot_reg_addr_offset,     0, 1 },
+  { vc4_p_addr_reg_0_15_num_u4, ot_reg_addr,    	0xFFFFu, 0 },
+  { vc4_p_addr_reg_0_15_num_u4, ot_reg_addr_offset,	0xFFFFu, 4 },
+  { vc4_p_addr_reg_0_15_num_s4, ot_reg_addr,   	 	0xFFFFu, 0 },
+  { vc4_p_addr_reg_0_15_num_s4, ot_reg_addr_offset, 	0xFFFFu, 4 },
+  { vc4_p_addr_reg_post_inc,    ot_reg_addr_pi, 	0, 0 },
+  { vc4_p_addr_reg_pre_dec,     ot_reg_addr_pd, 	0, 0 },
+  { vc4_p_r0_rel_s,             ot_reg_addr_offset, 	(1u << 0), 1 },
+  { vc4_p_r0_rel_s2,            ot_reg_addr_offset, 	(1u << 0), 2 },
+  { vc4_p_r0_rel_s4,            ot_reg_addr_offset, 	(1u << 0), 4 },
+  { vc4_p_r24_rel_s,            ot_reg_addr_offset, 	(1u << 24), 1 },
+  { vc4_p_r24_rel_s2,           ot_reg_addr_offset, 	(1u << 24), 2 },
+  { vc4_p_r24_rel_s4,           ot_reg_addr_offset, 	(1u << 24), 4 },
+  { vc4_p_sp_rel_s,             ot_reg_addr_offset, 	(1u << 25), 1 },
+  { vc4_p_sp_rel_s2,            ot_reg_addr_offset, 	(1u << 25), 2 },
+  { vc4_p_sp_rel_s4,            ot_reg_addr_offset, 	(1u << 25), 4 },
+  { vc4_p_pc_rel_s,             ot_num, 		0, 1 },
+  { vc4_p_pc_rel_s2,            ot_num, 		0, 2 },
+  { vc4_p_pc_rel_s4,            ot_num, 		0, 4 },
+  /*
+  { vc4_p_pc_rel_s,             ot_reg_addr_offset, 	(1u << 31), 1 },
+  { vc4_p_pc_rel_s2,            ot_reg_addr_offset, 	(1u << 31), 2 },
+  { vc4_p_pc_rel_s4,            ot_reg_addr_offset, 	(1u << 31), 4 },
+  */
+};
 
-  switch (param->type)
-    {
-    case vc4_p_unknown:
-      printf("UNKNOWN!!\n");
-      break;
+static int match_op_info_to_vc4_asm_item(struct vc4_param *param,
+					 struct op_info *ops)
+{
+  size_t i;
+  /*
+  char buf[2][256];
 
-    case vc4_p_reg_0_15:
-      if (ops->type == ot_reg && ops->reg < 16)
+  printf("match %s = %s\n",
+	 vc4_param_print(param, buf[0]),
+	 print_op_info(ops, buf[1]));
+  */
+  for (i = 0; i < ARRAY_SIZE(match_ops_data); i++) {
+
+    if (match_ops_data[i].pt == param->type &&
+	match_ops_data[i].ot == ops->type &&
+	(match_ops_data[i].reg_bitmap == 0 ||
+	 match_ops_data[i].reg_bitmap & (1u << ops->reg))) {
+
+      if (match_ops_data[i].width_match == 0)
 	return 0;
-      break;
-
-    case vc4_p_reg_0_31:
-      if (ops->type == ot_reg)
+      if (match_ops_data[i].width_match == 2 &&
+	  ops->exp.X_op == O_constant &&
+	  (ops->exp.X_add_number & 0x1))
+	return -1;
+      if (match_ops_data[i].width_match == 4 &&
+	  ops->exp.X_op == O_constant &&
+	  (ops->exp.X_add_number & 0x3))
+	return -1;
+      if (ops->width <= param->num_width)
 	return 0;
-      break;
-
-    case vc4_p_reg_0_6_16_24:
-      if (ops->type == ot_reg &&
-	  (ops->reg == 0 || ops->reg == 6 || ops->reg == 16 || ops->reg == 24))
-	return 0;
-      break;
-
-    case vc4_p_reg_r6:
-      if (ops->type == ot_reg && ops->reg == 6)
-	return 0;
-      break;
-
-    case vc4_p_reg_sp:
-      if (ops->type == ot_reg && ops->reg == 25)
-	return 0;
-      break;
-
-    case vc4_p_reg_lr:
-      if (ops->type == ot_reg && ops->reg == 26)
-	return 0;
-      break;
-
-    case vc4_p_reg_sr:
-      if (ops->type == ot_reg && ops->reg == 30)
-	return 0;
-      break;
-
-    case vc4_p_reg_pc:
-      if (ops->type == ot_reg && ops->reg == 31)
-	return 0;
-      break;
-
-    case vc4_p_reg_cpuid:
-      if (ops->type == ot_cpuid)
-	return 0;
-      break;
-
-    case vc4_p_reg_range:
-      if (ops->type == ot_reg_range) {
-	assert(ops->reg == 0 || ops->reg == 6 || ops->reg == 16 || ops->reg == 24);
-	return 0;
-      }
-      break;
-
-    case vc4_p_reg_range_r6:
-      if (ops->type == ot_reg_range && ops->reg == 6)
-	return 0;
-      break;
-
-    case vc4_p_reg_shl:
-    case vc4_p_reg_shl_8:
-    case vc4_p_reg_shl_p1:
-      if (ops->type == ot_reg_shl)
-	return 0;
-      break;
-
-    case vc4_p_reg_lsr:
-    case vc4_p_reg_lsr_p1:
-      if (ops->type == ot_reg_lsr)
-	return 0;
-      break;
-
-    case vc4_p_num_u_shl_p1:
-    case vc4_p_num_s_shl_p1:
-      /* TODO */
-      return -1;
-
-    case vc4_p_num_u:
-    case vc4_p_num_s:
-      if (ops->type == ot_num) {
-	if (ops->width <= param->num_width)
-	  return 0;
-	return ops->width - param->num_width;
-      }
-      break;
-
-    case vc4_p_num_u4:
-    case vc4_p_num_s4:
-      if (ops->type == ot_num) {
-	if (ops->width <= param->num_width)
-	  return 0;
-	return ops->width - param->num_width;
-      }
-      break;
-
-    case vc4_p_addr_reg:
-      if (ops->type == ot_reg_addr)
-	return 0;
-      break;
-
-    case vc4_p_addr_reg_num_u:
-    case vc4_p_addr_reg_num_s:
-      if (ops->type == ot_reg_addr) {
-	return 0;
-      }
-      if (ops->type == ot_reg_addr_offset) {
-	if (ops->width <= param->num_width)
-	  return 0;
-	return ops->width - param->num_width;
-      }
-      break;
-
-    case vc4_p_addr_reg_post_inc:
-      if (ops->type == ot_reg_addr_pi)
-	return 0;
-      break;
-
-    case vc4_p_addr_reg_pre_dec:
-      if (ops->type == ot_reg_addr_pd)
-	return 0;
-      break;
-
-    case vc4_p_r0_rel_s:
-    case vc4_p_r0_rel_s2:
-    case vc4_p_r0_rel_s4:
-      if (ops->type == ot_reg_addr_offset && ops->reg == 0) {
-	if (ops->width <= param->num_width)
-	  return 0;
-	return ops->width - param->num_width;
-      }
-      break;
-
-    case vc4_p_r24_rel_s:
-    case vc4_p_r24_rel_s2:
-    case vc4_p_r24_rel_s4:
-      if (ops->type == ot_reg_addr_offset && ops->reg == 24) {
-	if (ops->width <= param->num_width)
-	  return 0;
-	return ops->width - param->num_width;
-      }
-      break;
-
-    case vc4_p_sp_rel_s:
-    case vc4_p_sp_rel_s2:
-    case vc4_p_sp_rel_s4:
-      if (ops->type == ot_reg_addr_offset && ops->reg == 25) {
-	if (ops->width <= param->num_width)
-	  return 0;
-	return ops->width - param->num_width;
-      }
-      break;
-
-    case vc4_p_pc_rel_s:
-    case vc4_p_pc_rel_s2:
-    case vc4_p_pc_rel_s4:
-      if (ops->type == ot_num) {
-	if (ops->width <= param->num_width)
-	  return 0;
-	return ops->width - param->num_width;
-      }
-      break;
-
-    default:
-      printf("asjdhfljaksdhflkashdfkahdsfklaj\n");
-      assert(0);
-      break;
+      return ops->width - param->num_width;
+    }
   }
 
   return -1;
 }
 
 
-static struct vc4_asm *match_op_info_to_vc4_asm(size_t count, struct op_info *ops,
+static struct vc4_asm *match_op_info_to_vc4_asm(size_t min_size,
+						size_t count,
+						struct op_info *ops,
 						struct vc4_asm *list)
 {
   struct vc4_asm *opcode;
@@ -703,6 +662,7 @@ static struct vc4_asm *match_op_info_to_vc4_asm(size_t count, struct op_info *op
   int ret;
   size_t i;
   int ers[5];
+  char buf[2][256];
 
   best = NULL;
   best_error = INT_MAX;
@@ -710,6 +670,9 @@ static struct vc4_asm *match_op_info_to_vc4_asm(size_t count, struct op_info *op
   for (opcode = list; opcode != NULL; opcode = opcode->next) {
 
     if (opcode->op->num_params != count)
+      continue;
+
+    if (opcode->op->length < min_size)
       continue;
 
     memset(ers, 0, sizeof(ers));
@@ -725,7 +688,11 @@ static struct vc4_asm *match_op_info_to_vc4_asm(size_t count, struct op_info *op
       this_error += ret;
     }
 
-    printf("opcode = %-10s %s\n", opcode->str, opcode->op->format);
+    printf("opcode = %-10s %s %s\n",
+	   opcode->str,
+	   opcode->op->format,
+	   opcode->op->string);
+
     {
       printf("  ");
       for (i=0; i<opcode->pat.count; i++) {
@@ -734,34 +701,35 @@ static struct vc4_asm *match_op_info_to_vc4_asm(size_t count, struct op_info *op
 	       opcode->pat.pat[i].val);
       }
       for (i=0; i<opcode->op->num_params; i++) {
-	printf(" %d[%c/%u/%c/%u]=%d", opcode->op->params[i].type,
-	       opcode->op->params[i].reg_code ? opcode->op->params[i].reg_code : ' ',
-	       opcode->op->params[i].reg_width,
-	       opcode->op->params[i].num_code ? opcode->op->params[i].num_code : ' ',
-	       opcode->op->params[i].num_width,
+	printf(" %s <> %s = %d",
+	       vc4_param_print(&opcode->op->params[i], buf[0]),
+	       print_op_info(&ops[i], buf[1]),
 	       ers[i]);
       }
       printf(" => %d\n", this_error);
     }
 
-    if (i == count && this_error >= 0) {
-      if (this_error < best_error) {
-	best_error = this_error;
-	best = opcode;
-      }
+    if (this_error >= 0 /*&& this_error < best_error*/ &&
+	(best == NULL || best->op->length > opcode->op->length)) {
+      best_error = this_error;
+      best = opcode;
     }
   }
+
+  (void)&best_error;
 
   return best;
 }
 
-static void fill_value(uint16_t *ins, const struct vc4_opcode *op, char code, uint32_t val)
+static void fill_value(uint16_t *ins, const struct vc4_opcode *op,
+		       char code, uint32_t val)
 {
   uint16_t mask;
   uint16_t *p;
   const char *f;
 
-  printf("Fill %s %c %u %d\n", op->string, code, val, op->vals[code - 'a'].length);
+  printf("Fill %s %c %u %d\n", op->string,
+	 code, val, op->vals[code - 'a'].length);
 
   assert(strlen(op->string) == 16 * op->length);
   assert(code >= 'a' && code <= 'z');
@@ -793,69 +761,97 @@ static void fill_value(uint16_t *ins, const struct vc4_opcode *op, char code, ui
   }
 }
 
-static void output_num(uint16_t *ins, struct vc4_asm *opcode, int where,
-		       struct op_info *op, struct vc4_param *param, int is_pcrel, int divide)
+struct fixup_op_info {
+  int set;
+  int broken;
+  expressionS exp;
+  size_t width;
+  int divide;
+  int pc_rel;
+  struct vc4_asm *opcode;
+  struct op_info *op;
+  struct vc4_param *param;
+};
+
+
+static void fixup_num(struct fixup_op_info *roi, int where)
 {
   char buf2[256];
+  bfd_reloc_code_real_type bfd_fixup;
 
-  assert(divide == 1 || divide == 2 || divide == 4);
+  if (!roi->set)
+    return;
 
-  if (op->exp.X_op == O_symbol) {
+  if (roi->exp.X_op == O_symbol) {
 
-    if (is_pcrel) {
+    bfd_fixup = vc4_bfd_fixup_get(roi->opcode->op->string,
+				  roi->param->num_code,
+				  roi->pc_rel,
+				  roi->divide);
 
-      if (param->num_width == 23 && divide == 2) {
-	printf("fix_new_exp pc-rel 23 %s\n", print_op_info(op, buf2));
-	fix_new_exp(frag_now, where, opcode->op->length * 2,
-		    &op->exp, TRUE, BFD_RELOC_VC4_REL23_MUL2);
-      }
-      else if (param->num_width == 27 && divide == 2) {
-	printf("fix_new_exp pc-rel 27 %s\n", print_op_info(op, buf2));
-	fix_new_exp(frag_now, where, opcode->op->length * 2,
-		    &op->exp, TRUE, BFD_RELOC_VC4_REL27_MUL2);
-      }
-      else if (param->num_width == 32 && divide == 1) {
-	printf("fix_new_exp pc-rel 32 %s\n", print_op_info(op, buf2));
-	fix_new_exp(frag_now, where, opcode->op->length * 2,
-		    &op->exp, TRUE, BFD_RELOC_VC4_REL32);
-      }
-      else {
-	printf("Don't know how to do fixup!\n");
-	assert(0);
-      }
-
-    } else {
-
-      if (param->num_width == 16 && divide == 1) {
-	printf("fix_new_exp imm 16 %s\n", print_op_info(op, buf2));
-	fix_new_exp(frag_now, where, opcode->op->length * 2,
-		    &op->exp, FALSE, BFD_RELOC_VC4_IMM16);
-      }
-      else if (param->num_width == 23 && divide == 1) {
-	printf("fix_new_exp imm 23 %s\n", print_op_info(op, buf2));
-	fix_new_exp(frag_now, where, opcode->op->length * 2,
-		    &op->exp, FALSE, BFD_RELOC_VC4_IMM23);
-      }
-      else if (param->num_width == 27 && divide == 1) {
-	printf("fix_new_exp imm 27 %s %x\n", print_op_info(op, buf2), where);
-	fix_new_exp(frag_now, where, opcode->op->length * 2,
-		    &op->exp, FALSE, BFD_RELOC_VC4_IMM27);
-      }
-      else if (param->num_width == 32 && divide == 1) {
-	printf("fix_new_exp imm 32 %s %x\n", print_op_info(op, buf2), where);
-	fix_new_exp(frag_now, where, opcode->op->length * 2,
-		    &op->exp, FALSE, BFD_RELOC_VC4_IMM32);
-      }
-      else {
-	printf("Don't know how to do fixup!\n");
-	assert(0);
-      }
-
+    if (bfd_fixup == 0) {
+      as_bad("%s: Can't find bfd fixup type! %d %s\n", __func__,
+	     roi->width, print_op_info(roi->op, buf2));
+      return;
     }
 
+    printf("%s: fix_new_exp %s %d %d/%d %d %d %llx%llx %s\n", __func__,
+	   roi->pc_rel ? "pc-rel" : "imm", bfd_fixup,
+	   roi->width,
+	   vc4_bfd_fixup_get_width(bfd_fixup),
+	   vc4_bfd_fixup_get_length(bfd_fixup),
+	   vc4_bfd_fixup_get_divide(bfd_fixup),
+	   vc4_bfd_fixup_get_mask(bfd_fixup).hi,
+	   vc4_bfd_fixup_get_mask(bfd_fixup).lo,
+	   print_op_info(roi->op, buf2));
+
+    fix_new_exp(frag_now, where, roi->opcode->op->length * 2,
+		&roi->op->exp, roi->pc_rel, bfd_fixup);
   }
-  else if (op->exp.X_op == O_constant) {
-    fill_value(ins, opcode->op, param->num_code, op->exp.X_add_number);
+}
+
+static int get_reg_div8(int reg)
+{
+  int x = 0;
+  switch(reg) {
+  case 0: x = 0; break;
+  case 6: x = 1; break;
+  case 16: x = 2; break;
+  case 24: x = 3; break;
+  default:
+    as_fatal("A instruction expecting r0-, r6-, r16- or r24- was passed r%u-",
+	     reg);
+    break;
+  }
+  return x;
+}
+
+static void output_num(struct fixup_op_info *roi, uint16_t *ins,
+		       struct vc4_asm *opcode,
+		       struct op_info *op, struct vc4_param *param,
+		       int pc_rel, int divide)
+{
+  if (op->exp.X_op == O_constant) {
+    if (op->exp.X_add_number > (1LL << param->num_width)) {
+      roi->broken = 1;
+    }
+    if ((divide > 1) && (op->exp.X_add_number % divide)) {
+      roi->broken = 1;
+    }
+    fill_value(ins, opcode->op, param->num_code,
+	       op->exp.X_add_number / divide);
+  } else {
+    if (roi->set)
+      as_bad("Can't have two relax op's");
+    
+    roi->set = 1;
+    roi->exp = op->exp;
+    roi->width = param->num_width;
+    roi->divide = divide;
+    roi->pc_rel = pc_rel;
+    roi->opcode = opcode;
+    roi->op = op;
+    roi->param = param;
   }
 }
 
@@ -866,6 +862,15 @@ md_assemble (char * str)
   struct vc4_asm *opcode;
   struct vc4_asm *list;
   size_t i;
+  char *t;
+  struct op_info ops[5];
+  int count;
+  uint16_t ins[5];
+  char buf[256];
+  char *frag;
+  int where;
+  struct fixup_op_info fixup_info;
+  size_t min_size;
 
   printf("A %s\n", str);
 
@@ -887,199 +892,130 @@ md_assemble (char * str)
 	       opcode->pat.pat[i].val);
       }
       for (i=0; i<opcode->op->num_params; i++) {
-	printf(" %d[%u/%u/%c/%c]", opcode->op->params[i].type,
-	       opcode->op->params[i].reg_width,
-	       opcode->op->params[i].num_width,
-	       opcode->op->params[i].code ? opcode->op->params[i].code : ' ',
-	       opcode->op->params[i].code2 ? opcode->op->params[i].code2 : ' ');
+	printf(" %s", vc4_param_print(&opcode->op->params[i], buf));
       }
       printf("\n");
     }
   }
   */
 
-  dwarf2_emit_insn (0);
+  t = input_line_pointer;
 
-  {
-    char *t = input_line_pointer;
-    struct op_info ops[5];
-    int count;
+  memset(ops, 0, sizeof(ops));
 
-    memset(ops, 0x55, sizeof(ops));
+  count = vc4_operands(&str, ops);
+  if (*skip_space (str) || count < 0) {
+    printf("[%s/%s] %d\n", str, skip_space (str), count);
+    as_bad (_("garbage at end of line"));
+    return;
+  }
+  input_line_pointer = t;
 
-    count = vc4_operands(&str, ops);
-    if (*skip_space (str) || count < 0) {
-      as_bad (_("garbage at end of line"));
-      printf("[%s/%s] %d\n", str, skip_space (str), count);
-    }
-    input_line_pointer = t;
+  min_size = 0;
+ try_again:
 
-    opcode = match_op_info_to_vc4_asm(count, ops, list);
+  opcode = match_op_info_to_vc4_asm(min_size, count, ops, list);
+  if (opcode == NULL) {
+    as_bad (_("can't match operands to opcode"));
+    return;
+  }
 
-    if (opcode != NULL) {
-      uint16_t ins[5];
-      char buf[256];
+  printf(">> opcode = %-10s %s (%s) %s %s\n",
+	 opcode->str, opcode->op->format,
+	 opcode->op->string, dump_asm_name(opcode, buf),
+	 opcode->relax_bigger ? "<relax?>" : "");
 
-      printf(">> opcode = %-10s %s (%s) %s\n",
-	     opcode->str, opcode->op->format,
-	     opcode->op->string, dump_asm_name(opcode, buf));
+  ins[0] = opcode->ins[0];
+  ins[1] = opcode->ins[1];
+  ins[2] = ins[3] = ins[4] = 0;
 
-      char *frag = frag_more (opcode->op->length * 2);
-      int where = frag - frag_now->fr_literal;
-      int x;
+  memset(&fixup_info, 0, sizeof(fixup_info));
 
-      ins[0] = opcode->ins[0];
-      ins[1] = opcode->ins[1];
-      ins[2] = ins[3] = ins[4] = 0;
+  fixup_info.set = 0;
 
-      for (i=0; i<opcode->op->num_params; i++) {
+  for (i=0; i<opcode->op->num_params; i++) {
 
-	switch (opcode->op->params[i].type) {
-	case vc4_p_reg_0_15:
-	case vc4_p_reg_0_31:
-	case vc4_p_addr_reg:
-	case vc4_p_addr_reg_post_inc:
-	case vc4_p_addr_reg_pre_dec:
-	case vc4_p_reg_shl_8:
-	  assert(ops[i].reg < (1 << opcode->op->params[i].reg_width));
-	  fill_value(ins, opcode->op, opcode->op->params[i].reg_code, ops[i].reg);
-	  break;
+    switch (opcode->op->params[i].type) {
+    case vc4_p_reg_0_6_16_24:
+      fill_value(ins, opcode->op, opcode->op->params[i].reg_code,
+		 get_reg_div8(ops[i].reg));
+      break;
 
-	case vc4_p_reg_cpuid:
-	case vc4_p_reg_r6:
-	case vc4_p_reg_sp:
-	case vc4_p_reg_lr:
-	case vc4_p_reg_sr:
-	case vc4_p_reg_pc:
-	  /* Done */
-	  break;
+    case vc4_p_reg_range:
+      fill_value(ins, opcode->op, opcode->op->params[i].reg_code,
+		 get_reg_div8(ops[i].reg));
+      fill_value(ins, opcode->op, opcode->op->params[i].num_code,
+		 (ops[i].num2 - ops[i].reg) & 31);
+      break;
 
-	case vc4_p_reg_0_6_16_24:
-	  switch(ops[i].reg) {
-	  case 0: x = 0; break;
-	  case 6: x = 1; break;
-	  case 16: x = 2; break;
-	  case 24: x = 3; break;
-	  default: assert(0); break;
-	  }
-	  fill_value(ins, opcode->op, opcode->op->params[i].reg_code, x);
-	  break;
+    case vc4_p_reg_range_r6:
+      assert(ops[i].reg == 6);
+      fill_value(ins, opcode->op, opcode->op->params[i].num_code,
+		 (ops[i].num2 - ops[i].reg) & 31);
+      break;
 
-	case vc4_p_reg_range:
-	  switch(ops[i].reg) {
-	  case 0: x = 0; break;
-	  case 6: x = 1; break;
-	  case 16: x = 2; break;
-	  case 24: x = 3; break;
-	  default: assert(0); break;
-	  }
-	  fill_value(ins, opcode->op, opcode->op->params[i].reg_code, x);
-	  fill_value(ins, opcode->op, opcode->op->params[i].num_code,
-		     (ops[i].num2 - ops[i].reg) & 31);
-	  break;
-
-	case vc4_p_reg_range_r6:
-	  assert(ops[i].reg == 6);
-	  fill_value(ins, opcode->op, opcode->op->params[i].num_code,
-		     (ops[i].num2 - ops[i].reg) & 31);
-	  break;
-
-	case vc4_p_reg_shl:
-	case vc4_p_reg_shl_p1:
-	case vc4_p_reg_lsr:
-	case vc4_p_reg_lsr_p1:
-	  fill_value(ins, opcode->op, opcode->op->params[i].reg_code, ops[i].reg);
-	  if (ops[i].exp.X_op == O_constant) {
-	    fill_value(ins, opcode->op, opcode->op->params[i].num_code, ops[i].exp.X_add_number);
-	  } else {
-	    assert(0 && "Need a constant for reg_shl / reg_lsr");
-	  }
-	  break;
-
-	case vc4_p_num_u_shl_p1:
-	case vc4_p_num_s_shl_p1:
-	  break;
-
-	case vc4_p_num_u:
-	case vc4_p_num_s:
-	  output_num(ins, opcode, where, &ops[i], &opcode->op->params[i], FALSE, 1);
-	  break;
-
-	case vc4_p_num_u4:
-	case vc4_p_num_s4:
-	  output_num(ins, opcode, where, &ops[i], &opcode->op->params[i], FALSE, 4);
-	  break;
-
-	case vc4_p_addr_reg_num_u:
-	case vc4_p_addr_reg_num_s:
-	  fill_value(ins, opcode->op, opcode->op->params[i].reg_code, ops[i].reg);
-	  output_num(ins, opcode, where, &ops[i], &opcode->op->params[i], FALSE, 1);
-	  break;
-
-	case vc4_p_r0_rel_s:
-	case vc4_p_r24_rel_s:
-	case vc4_p_sp_rel_s:
-	  output_num(ins, opcode, where, &ops[i], &opcode->op->params[i], FALSE, 1);
-	  break;
-
-	case vc4_p_r0_rel_s2:
-	case vc4_p_r24_rel_s2:
-	case vc4_p_sp_rel_s2:
-	  output_num(ins, opcode, where, &ops[i], &opcode->op->params[i], FALSE, 2);
-	  break;
-
-	case vc4_p_r0_rel_s4:
-	case vc4_p_r24_rel_s4:
-	case vc4_p_sp_rel_s4:
-	  output_num(ins, opcode, where, &ops[i], &opcode->op->params[i], FALSE, 4);
-	  break;
-
-	case vc4_p_pc_rel_s:
-	  output_num(ins, opcode, where, &ops[i], &opcode->op->params[i], TRUE, 1);
-	  break;
-
-	case vc4_p_pc_rel_s2:
-	  output_num(ins, opcode, where, &ops[i], &opcode->op->params[i], TRUE, 2);
-	  break;
-
-	case vc4_p_pc_rel_s4:
-	  output_num(ins, opcode, where, &ops[i], &opcode->op->params[i], TRUE, 4);
-	  break;
-
-	default:
-	  printf("asdfasld999fk\n");
-	  assert(0);
-	  fill_value(ins, opcode->op, opcode->op->params[i].reg_code, ops[i].reg);
-	  break;
-	}
+    case vc4_p_reg_shl:
+    case vc4_p_reg_lsr:
+      if (ops[i].exp.X_op == O_constant) {
+	fill_value(ins, opcode->op, opcode->op->params[i].num_code,
+		   ops[i].exp.X_add_number);
+      } else {
+	assert(0 && "Need a constant for reg_shl / reg_lsr");
       }
+      break;
 
-      for (i=0; i<opcode->op->length; i++) {
-	printf("%04x\n", ins[i]);
-	bfd_putl16 ((bfd_vma)ins[i], frag + i * 2);
+    case vc4_p_reg_shl_p1:
+    case vc4_p_reg_lsr_p1:
+      if (ops[i].exp.X_op == O_constant) {
+	fill_value(ins, opcode->op, opcode->op->params[i].num_code,
+		   ops[i].exp.X_add_number - 1);
+      } else {
+	assert(0 && "Need a constant for reg_shl / reg_lsr");
       }
+      break;
+
+    default:
+      break;
     }
-    else {
-      as_bad (_("can't match operands to opcode"));
+
+    if (vc4_param_has_reg(opcode->op->params[i].type)) {
+      assert(ops[i].reg < (1 << opcode->op->params[i].reg_width));
+      fill_value(ins, opcode->op, opcode->op->params[i].reg_code, ops[i].reg);
+    }
+
+    if (vc4_param_has_num(opcode->op->params[i].type)) {
+      output_num(&fixup_info, ins, opcode, &ops[i], &opcode->op->params[i],
+		 vc4_param_pc_rel(opcode->op->params[i].type),
+		 vc4_param_divide(opcode->op->params[i].type));
     }
   }
-}
 
-
-/* The syntax in the manual says constants begin with '#'.
-   We just ignore it.  */
-
-void
-md_operand (expressionS * expressionP)
-{
-  UNUSED(expressionP);
-#if 0
-  if (* input_line_pointer == '#')
-    {
-      input_line_pointer ++;
-      expression (expressionP);
+  if (fixup_info.broken) {
+    if (opcode->op->length < 5) {
+      min_size = opcode->op->length + 1;
+      goto try_again;
+    } else {
+      printf("?????????????????\n");
+      as_bad("Failed to fit instruction operand!\n");
     }
-#endif
+  }
+
+  dwarf2_emit_insn (0);
+
+  if (opcode->relax_bigger && fixup_info.set) {
+    frag = frag_more(opcode->op->length * 2);
+    where = frag - frag_now->fr_literal;
+  } else {
+    frag = frag_more(opcode->op->length * 2);
+    where = frag - frag_now->fr_literal;
+  }
+
+  fixup_num(&fixup_info, where);
+
+  for (i=0; i<opcode->op->length; i++) {
+    printf("%04x\n", ins[i]);
+    bfd_putl16 ((bfd_vma)ins[i], frag + i * 2);
+  }
 }
 
 valueT
@@ -1097,6 +1033,14 @@ md_undefined_symbol (char * name ATTRIBUTE_UNUSED)
 
 
 /* Interface to relax_segment.  */
+
+int vc4_relax_frag(asection *s, struct frag *f, long l)
+{
+  (void)s;
+  (void)f;
+  (void)&l;
+  return 0;
+}
 
 /* FIXME: Look through this.  */
 
@@ -1261,13 +1205,13 @@ vc4_fix_adjustable (fixS * fixP)
 void
 md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 {
-  printf("md_apply_fix %d %s 0x%lx %p %d\n",
+  printf("md_apply_fix %d %s 0x%lx %p %p %d\n",
 	 fixP->fx_r_type, ""/*bfd_reloc_code_real_names[fixP->fx_r_type]*/,
 	 fixP->fx_where,
-	 fixP->fx_addsy, fixP->fx_pcrel);
+	 fixP->fx_addsy, fixP->fx_subsy, fixP->fx_pcrel);
 
   unsigned char *where;
-  unsigned long insn;
+  uint16_t ins[5];
   long value = *valP;
 
   if (fixP->fx_addsy == (symbolS *) NULL)
@@ -1303,267 +1247,65 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 
   if (fixP->fx_done)
     {
+      size_t len, i;
+
       /* Fetch the instruction, insert the fully resolved operand
 	 value, and stuff the instruction back again.  */
       where = (unsigned char *) fixP->fx_frag->fr_literal + fixP->fx_where;
-      insn = bfd_getl16 (where);
 
       switch (fixP->fx_r_type)
 	{
+	case BFD_RELOC_VC4_REL7_MUL2:
+	case BFD_RELOC_VC4_REL8_MUL2:
+	case BFD_RELOC_VC4_REL10_MUL2:
+	case BFD_RELOC_VC4_REL16:
 	case BFD_RELOC_VC4_REL23_MUL2:
-	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_REL23_MUL2");
-
-	  if (value & 1)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("odd address operand: %ld"), value);
-
-	  /* Instruction addresses are always right-shifted by 1.  */
-	  value >>= 1;
-
-	  /*	  if (value < -64 || value > 63)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  */
-	  bfd_putl16 ((bfd_vma) (insn | ((value >> 16) & 0x007f)), where);
-	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
-	  break;
-
 	case BFD_RELOC_VC4_REL27:
-	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_REL27");
-
-	  /*	  if (value < -64 || value > 63)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  */
-	  insn = bfd_getl16 (where + 2);
-	  insn = (insn & 0xf800) | ((value >> 16) & 0x7ff);
-	  bfd_putl16 ((bfd_vma) ((insn & 0xf800) | ((value >> 16) & 0x7ff)), where + 2);
-	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 4);
-	  break;
-
 	case BFD_RELOC_VC4_REL27_MUL2:
-	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_REL27_MUL2");
-
-	  if (value & 1)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("odd address operand: %ld"), value);
-
-	  /* Instruction addresses are always right-shifted by 1.  */
-	  value >>= 1;
-
-	  /*	  if (value < -64 || value > 63)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  */
-	  insn = bfd_getl16 (where);
-	  insn = (insn & 0xf080);
-	  insn |= (value >> 16) & 0x007f;
-	  insn |= (value >> 15) & 0x0f00;
-	  bfd_putl16 ((bfd_vma) (insn), where);
-	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
-	  break;
-
 	case BFD_RELOC_VC4_REL32:
-	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_REL32");
-
-	  /*	  if (value < -64 || value > 63)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  */
-	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
-	  bfd_putl16 ((bfd_vma) ((value >> 16) & 0xffff), where + 4);
-	  break;
-
+	case BFD_RELOC_VC4_IMM5_1:
+	case BFD_RELOC_VC4_IMM5_2:
+	case BFD_RELOC_VC4_IMM6_MUL4:
+	case BFD_RELOC_VC4_IMM11:
+	case BFD_RELOC_VC4_IMM12:
 	case BFD_RELOC_VC4_IMM16:
-	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_IMM16");
-
-	  /*	  if (value < -64 || value > 63)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  */
-	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
-	  break;
-
-	case BFD_RELOC_VC4_IMM23:
-	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_IMM23");
-
-	  /*	  if (value < -64 || value > 63)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  */
-	  insn = bfd_getl16 (where);
-	  bfd_putl16 ((bfd_vma) ((insn & 0xff80) | ((value >> 16) & 0x007f)), where);
-	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
-	  break;
-
+      /*case BFD_RELOC_VC4_IMM23:*/
 	case BFD_RELOC_VC4_IMM27:
-	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_IMM27");
-
-	  /*	  if (value < -64 || value > 63)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  */
-	  insn = bfd_getl16 (where + 2);
-	  insn = (insn & 0xf800) | ((value >> 16) & 0x7ff);
-	  bfd_putl16 ((bfd_vma) ((insn & 0xf800) | ((value >> 16) & 0x7ff)), where + 2);
-	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 4);
-	  break;
-
 	case BFD_RELOC_VC4_IMM32:
-	  printf("md_apply_fix %d %s\n", fixP->fx_r_type, "BFD_RELOC_VC4_IMM32");
+	case BFD_RELOC_VC4_IMM32_2:
 
-	  /*	  if (value < -64 || value > 63)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  */
-	  bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
-	  bfd_putl16 ((bfd_vma) ((value >> 16) & 0xffff), where + 4);
-	  break;
-#if 0
-	case BFD_RELOC_AVR_13_PCREL:
-	  if (value & 1)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("odd address operand: %ld"), value);
+	  len = vc4_bfd_fixup_get_length(fixP->fx_r_type);
 
-	  /* Instruction addresses are always right-shifted by 1.  */
-	  value >>= 1;
-	  --value;			/* Correct PC.  */
+	  for (i=0; i<len; i++) {
+	    ins[i] = bfd_getl16(where + i * 2);
+	  }
 
-	  if (value < -2048 || value > 2047)
-	    {
-	      /* No wrap for devices with >8K of program memory.  */
-	      if ((avr_mcu->isa & AVR_ISA_MEGA) || avr_opt.no_wrap)
-		as_bad_where (fixP->fx_file, fixP->fx_line,
-			      _("operand out of range: %ld"), value);
-	    }
-
-	  value &= 0xfff;
-	  bfd_putl16 ((bfd_vma) (value | insn), where);
-	  break;
-
-	case BFD_RELOC_32:
-	  bfd_putl32 ((bfd_vma) value, where);
-	  break;
-
-	case BFD_RELOC_16:
-	  bfd_putl16 ((bfd_vma) value, where);
-	  break;
-
-	case BFD_RELOC_8:
-          if (value > 255 || value < -128)
-	    as_warn_where (fixP->fx_file, fixP->fx_line,
-                           _("operand out of range: %ld"), value);
-          *where = value;
-	  break;
-
-	case BFD_RELOC_AVR_16_PM:
-	  bfd_putl16 ((bfd_vma) (value >> 1), where);
-	  break;
-
-	case BFD_RELOC_AVR_LDI:
-	  if (value > 255)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (value), where);
-	  break;
-
-	case BFD_RELOC_AVR_6:
-	  if ((value > 63) || (value < 0))
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  bfd_putl16 ((bfd_vma) insn | ((value & 7) | ((value & (3 << 3)) << 7) | ((value & (1 << 5)) << 8)), where);
-	  break;
-
-	case BFD_RELOC_AVR_6_ADIW:
-	  if ((value > 63) || (value < 0))
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
-			  _("operand out of range: %ld"), value);
-	  bfd_putl16 ((bfd_vma) insn | (value & 0xf) | ((value & 0x30) << 2), where);
-	  break;
-
-	case BFD_RELOC_AVR_LO8_LDI:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (value), where);
-	  break;
-
-	case BFD_RELOC_AVR_HI8_LDI:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (value >> 8), where);
-	  break;
-
-	case BFD_RELOC_AVR_MS8_LDI:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (value >> 24), where);
-	  break;
-
-	case BFD_RELOC_AVR_HH8_LDI:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (value >> 16), where);
-	  break;
-
-	case BFD_RELOC_AVR_LO8_LDI_NEG:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (-value), where);
-	  break;
-
-	case BFD_RELOC_AVR_HI8_LDI_NEG:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (-value >> 8), where);
-	  break;
-
-	case BFD_RELOC_AVR_MS8_LDI_NEG:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (-value >> 24), where);
-	  break;
-
-	case BFD_RELOC_AVR_HH8_LDI_NEG:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (-value >> 16), where);
-	  break;
-
-	case BFD_RELOC_AVR_LO8_LDI_PM:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (value >> 1), where);
-	  break;
-
-	case BFD_RELOC_AVR_HI8_LDI_PM:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (value >> 9), where);
-	  break;
-
-	case BFD_RELOC_AVR_HH8_LDI_PM:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (value >> 17), where);
-	  break;
-
-	case BFD_RELOC_AVR_LO8_LDI_PM_NEG:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (-value >> 1), where);
-	  break;
-
-	case BFD_RELOC_AVR_HI8_LDI_PM_NEG:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (-value >> 9), where);
-	  break;
-
-	case BFD_RELOC_AVR_HH8_LDI_PM_NEG:
-	  bfd_putl16 ((bfd_vma) insn | LDI_IMMEDIATE (-value >> 17), where);
-	  break;
-
-	case BFD_RELOC_AVR_CALL:
-	  {
-	    unsigned long x;
-
-	    x = bfd_getl16 (where);
+	  switch (vc4_bfd_fixup_get_divide(fixP->fx_r_type)) {
+	  case 1:
+	    break;
+	  case 2:
 	    if (value & 1)
-	      as_bad_where (fixP->fx_file, fixP->fx_line,
-			    _("odd address operand: %ld"), value);
+	      as_bad_where(fixP->fx_file, fixP->fx_line,
+			   _("address operand not divisible by 2: %ld"), value);
 	    value >>= 1;
-	    x |= ((value & 0x10000) | ((value << 3) & 0x1f00000)) >> 16;
-	    bfd_putl16 ((bfd_vma) x, where);
-	    bfd_putl16 ((bfd_vma) (value & 0xffff), where + 2);
+	    break;
+	  case 4:
+	    if (value & 3)
+	      as_bad_where(fixP->fx_file, fixP->fx_line,
+			   _("address operand not divisible by 4: %ld"), value);
+	    value >>= 2;
+	    break;
+	  default:
+	    assert(0);
+	  }
+
+	  vc4_bfd_fixup_set(fixP->fx_r_type, ins, value);
+
+	  for (i=0; i<len; i++) {
+	    bfd_putl16(ins[i], where + i * 2);
 	  }
 	  break;
 
-        case BFD_RELOC_AVR_8_LO:
-          *where = 0xff & value;
-          break;
-
-        case BFD_RELOC_AVR_8_HI:
-          *where = 0xff & (value >> 8);
-          break;
-
-        case BFD_RELOC_AVR_8_HLO:
-          *where = 0xff & (value >> 16);
-          break;
-#endif
         default:
 	  as_fatal (_("line %d: unknown relocation type: 0x%x (%u)"),
 		    fixP->fx_line, fixP->fx_r_type, fixP->fx_r_type);
@@ -1590,11 +1332,21 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
     }
 }
 
+static const char *get_name(symbolS *s)
+{
+  return (s && S_GET_NAME(s)) ? S_GET_NAME(s) : "";
+}
+
 arelent *
 vc4_tc_gen_reloc (asection *seg ATTRIBUTE_UNUSED,
 		  fixS *fixp)
 {
   arelent *reloc;
+
+  printf("%s: %p %p:%s %p:%s\n", __func__,
+	 fixp,
+	 fixp->fx_addsy, get_name(fixp->fx_addsy),
+	 fixp->fx_subsy, get_name(fixp->fx_subsy));
 
   if (fixp->fx_addsy && fixp->fx_subsy)
     {

@@ -27,7 +27,7 @@
 #include <assert.h>
 #include <ctype.h>
 
-struct vc4_info *vc4_info;
+static struct vc4_info *vc4_info;
 
 static int vc4_decode(bfd_vma memaddr,
 		      struct disassemble_info *dis_info)
@@ -69,12 +69,12 @@ print_insn_vc4 (bfd_vma memaddr, struct disassemble_info *info)
   if (vc4_info == NULL) {
     vc4_info = vc4_read_arch_file(
 	    "/home/marmar01/src/rpi/videocoreiv/videocoreiv.arch");
+
+    if (vc4_info == NULL) {
+      info->fprintf_func(info->stream, "<unknown>");
+      return 2;
+    }
   }
 
-  if (vc4_info != NULL) {
-    return vc4_decode(memaddr, info);
-  }
-
-  info->fprintf_func(info->stream, "<unknown>");
-  return 2;
+  return vc4_decode(memaddr, info);
 }

@@ -135,3 +135,135 @@ void vc4_fill_value(uint16_t *ins, uint16_t *ins_mask, const struct vc4_opcode *
 		mask <<= 1;
 	}
 }
+
+struct vc4_param_info
+{
+	const char *name;
+	int has_reg;
+	int has_num;
+	int pc_rel;
+	int divide;
+};
+
+#define VC4_PX_INFO(name, has_reg, has_num, pc_rel, divide) { # name, has_reg, has_num, pc_rel, divide },
+static const struct vc4_param_info vc4_param_info[] =
+{
+	{ "unknown", 0, 0, 0, 0 },
+	VC4_PX_LIST(INFO)
+};
+
+const char *vc4_param_name(enum vc4_param_type type)
+{
+	if (type >= vc4_p_MAX)
+		return vc4_param_info[type].name;
+	return vc4_param_info[type].name;
+}
+
+char *vc4_param_print(const struct vc4_param *par, char *buf)
+{
+	switch (par->type) {
+
+	case vc4_p_reg_0_15:
+	case vc4_p_reg_0_31:
+	case vc4_p_reg_0_6_16_24:
+	case vc4_p_addr_reg_post_inc:
+	case vc4_p_addr_reg_pre_dec:
+	case vc4_p_reg_shl_8:
+	case vc4_p_addr_reg_0_15:
+	case vc4_p_addr_reg_0_31:
+	case vc4_p_addr_2reg_begin_0_31:
+	case vc4_p_addr_2reg_end_0_31:
+		assert(par->reg_code >= 'a' && par->reg_code <= 'z');
+		assert(par->num_code == 0);
+		sprintf(buf, "%s[%c:%zu]", vc4_param_name(par->type),
+			par->reg_code, par->reg_width);
+		break;
+
+	case vc4_p_reg_r6:
+	case vc4_p_reg_sp:
+	case vc4_p_reg_lr:
+	case vc4_p_reg_sr:
+	case vc4_p_reg_pc:
+	case vc4_p_reg_cpuid:
+		assert(par->reg_code == 0);
+		assert(par->num_code == 0);
+		sprintf(buf, "%s", vc4_param_name(par->type));
+		break;
+
+	case vc4_p_reg_range:
+	case vc4_p_reg_range_r6:
+	case vc4_p_num_u_shl_p1:
+	case vc4_p_num_s_shl_p1:
+	case vc4_p_num_u_lsr_p1:
+	case vc4_p_num_s_lsr_p1:
+	case vc4_p_reg_shl:
+	case vc4_p_reg_shl_p1:
+	case vc4_p_reg_lsr:
+	case vc4_p_reg_lsr_p1:
+	case vc4_p_addr_reg_num_u:
+	case vc4_p_addr_reg_num_s:
+	case vc4_p_addr_reg_0_15_num_u4:
+	case vc4_p_addr_reg_0_15_num_s4:
+		assert(par->reg_code >= 'a' && par->reg_code <= 'z');
+		assert(par->num_code >= 'a' && par->num_code <= 'z');
+		sprintf(buf, "%s[%c:%zu %c:%zu]", vc4_param_name(par->type),
+			par->reg_code, par->reg_width,
+			par->num_code, par->num_width);
+		break;
+
+	case vc4_p_r0_rel_s:
+	case vc4_p_r0_rel_s2:
+	case vc4_p_r0_rel_s4:
+	case vc4_p_r24_rel_s:
+	case vc4_p_r24_rel_s2:
+	case vc4_p_r24_rel_s4:
+	case vc4_p_sp_rel_s:
+	case vc4_p_sp_rel_s2:
+	case vc4_p_sp_rel_s4:
+	case vc4_p_num_u:
+	case vc4_p_num_s:
+	case vc4_p_num_u4:
+	case vc4_p_num_s4:
+	case vc4_p_pc_rel_s:
+	case vc4_p_pc_rel_s2:
+	case vc4_p_pc_rel_s4:
+		assert(par->reg_code == 0);
+		assert(par->num_code >= 'a' && par->num_code <= 'z');
+		sprintf(buf, "%s[%c:%zu]", vc4_param_name(par->type),
+			par->num_code, par->num_width);
+		break;
+
+	default:
+		assert(0);
+		break;
+	}
+	return buf;
+}
+
+int vc4_param_has_reg(enum vc4_param_type type)
+{
+	if (type >= vc4_p_MAX)
+		return vc4_param_info[type].has_reg;
+	return vc4_param_info[type].has_reg;
+}
+
+int vc4_param_has_num(enum vc4_param_type type)
+{
+	if (type >= vc4_p_MAX)
+		return vc4_param_info[type].has_num;
+	return vc4_param_info[type].has_num;
+}
+
+int vc4_param_pc_rel(enum vc4_param_type type)
+{
+	if (type >= vc4_p_MAX)
+		return vc4_param_info[type].pc_rel;
+	return vc4_param_info[type].pc_rel;
+}
+
+int vc4_param_divide(enum vc4_param_type type)
+{
+	if (type >= vc4_p_MAX)
+		return vc4_param_info[type].divide;
+	return vc4_param_info[type].divide;
+}

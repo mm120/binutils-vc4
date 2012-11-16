@@ -3035,7 +3035,7 @@ symbol_print_statistics (FILE *file)
 	   local_symbol_count, local_symbol_conversion_count);
 }
 
-#ifdef OBJ_COMPLEX_RELC
+#if OBJ_COMPLEX_RELC
 
 /* Convert given symbol to a new complex-relocation symbol name.  This
    may be a recursive function, since it might be called for non-leaf

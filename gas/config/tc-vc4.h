@@ -56,6 +56,14 @@ extern bfd_boolean vc4_fix_adjustable (struct fix *);
 extern long md_pcrel_from_section (struct fix *, segT);
 #define MD_PCREL_FROM_SECTION(FIX, SEC) md_pcrel_from_section (FIX, SEC)
 
-/* For 8 vs 16 vs 32 bit branch selection.  */
-extern const struct relax_type md_relax_table[];
-#define TC_GENERIC_RELAX_TABLE md_relax_table
+/* GAS will call this function for any expression that can not be
+   recognized.  When the function is called, `input_line_pointer'
+   will point to the start of the expression.  */
+#define md_operand(x)
+
+#define md_relax_frag(segment, fragp, stretch) \
+  vc4_relax_frag (segment, fragp, stretch)
+extern int vc4_relax_frag(asection *, struct frag *, long);
+
+#define LISTING_WORD_SIZE 2
+

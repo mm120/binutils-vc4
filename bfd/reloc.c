@@ -6586,45 +6586,74 @@ ENUM
 ENUMDOC
   VideoCore IV 7-bit number (in uint16 0)
 
+  0001 1ccc cooo oooo                  "; b%s<c> 0x%08x<$+o*2>"
+
 ENUM
   BFD_RELOC_VC4_REL8_MUL2
 ENUMDOC
   VideoCore IV 8-bit number (in uint16 1)
+
+  1000 cccc aaaa dddd 10uu uuuu oooo oooo  "; addcmpb%s<c> r%i<d>, r%i<a>, #%i<u>, 0x%08x<$+o*2>"
 
 ENUM
   BFD_RELOC_VC4_REL10_MUL2
 ENUMDOC
   VideoCore IV 10-bit number (in uint16 1)
 
+  1000 cccc aaaa dddd 00ss ssoo oooo oooo  "; addcmpb%s<c> r%i<d>, r%i<a>, r%i<s>, 0x%08x<$+o*2>"
+
 ENUM
   BFD_RELOC_VC4_REL16
 ENUMDOC
   VideoCore IV 16-bit number (in uint16 1)
+
+  1011 1111 111d dddd oooo oooo oooo oooo  "; lea r%i<d>, 0x%08x<$+o> ;pc"
 
 ENUM
   BFD_RELOC_VC4_REL23_MUL2
 ENUMDOC
   VideoCore IV 23-bit number (in uint16's 0 & 1)
 
+  1001 cccc 0ooo oooo oooo oooo oooo oooo  "; b%s<c> 0x%08x<$+o*2>"
+
 ENUM
   BFD_RELOC_VC4_REL27
 ENUMDOC
   VideoCore IV 27-bit number (in uint16's 1 & 2)
+
+  1110 0111 ww0d dddd 1111 1ooo oooo oooo oooo oooo oooo oooo "; ld%s<w> r%i<d>, 0x%08x<$+o> ;(pc)"
 
 ENUM
   BFD_RELOC_VC4_REL27_MUL2
 ENUMDOC
   VideoCore IV 27-bit number (in uint16's 1 & 2)
 
+  1001 oooo 1ooo oooo oooo oooo oooo oooo  "; bl  0x%08x<$+o*2>"
+
+  (Note split of 'o' field)
+
 ENUM
   BFD_RELOC_VC4_REL32
 ENUMDOC
   VideoCore IV 32-bit number (in uint16's 1 & 2)
 
+  1110 0101 000d dddd oooo oooo oooo oooo oooo oooo oooo oooo  "; lea r%i<d>, 0x%08x<$+o> ;(pc)"
+
 ENUM
-  BFD_RELOC_VC4_IMM5
+  BFD_RELOC_VC4_IMM5_1
 ENUMDOC
   VideoCore IV 5-bit number (in uint16 2)
+
+  o
+  0000 010o oooo dddd  "; ld r%i<d>, 0x%02x<o*4>(sp)"
+
+ENUM
+  BFD_RELOC_VC4_IMM5_2
+ENUMDOC
+  VideoCore IV 5-bit number (in uint16 2)
+
+  u
+  1010 0000 ww1d dddd aaaa accc c10u uuuu  "; st%s<w>%s<c> r%i<d>, 0x%x<u>(r%i<a>)"
 
 ENUM
   BFD_RELOC_VC4_IMM6
@@ -6636,15 +6665,31 @@ ENUM
 ENUMDOC
   VideoCore IV 16-bit number (in uint16 2)
 
+  0001 0ooo ooo1 1001
+
 ENUM
   BFD_RELOC_VC4_IMM11
 ENUMDOC
   VideoCore IV 11-bit number (in uint16 2)
 
+  x
+  1111 0xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy  "; vector48 0x%x<x>, 0x%x<y>"
+
+ENUM
+  BFD_RELOC_VC4_IMM12
+ENUMDOC
+  VideoCore IV 11-bit number (in uint16 2)
+
+  o (note split field)
+  1010 001o ww0d dddd ssss sooo oooo oooo  "; ld%s<w> r%i<d>, 0x%x<o>(r%i<s>)"
+
 ENUM
   BFD_RELOC_VC4_IMM16
 ENUMDOC
   VideoCore IV 16-bit number (in uint16 2)
+
+  o
+  1010 1000 ww0d dddd oooo oooo oooo oooo  "; ld%s<w> r%i<d>, 0x%0x<o>(r24)"
 
 ENUM
   BFD_RELOC_VC4_IMM23
@@ -6656,15 +6701,23 @@ ENUM
 ENUMDOC
   VideoCore IV 32-bit number (in uint16's 1 & 2)
 
+  o
+  1110 0111 ww0d dddd ssss sooo oooo oooo oooo oooo oooo oooo  "; ld%s<w> r%i<d>, 0x%08x<o>(r%i<s>)"
+
 ENUM
   BFD_RELOC_VC4_IMM32
 ENUMDOC
   VideoCore IV 32-bit number (in uint16's 1 & 2)
 
+  1110 0000 ssss dddd uuuu uuuu uuuu uuuu uuuu uuuu uuuu uuuu  "; op0"
+
 ENUM
   BFD_RELOC_VC4_IMM32_2
 ENUMDOC
   VideoCore IV 32-bit number  (in uint16's 3 & 4)
+
+  z
+  1111 1xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy zzzz zzzz zzzz zzzz zzzz zzzz zzzz zzzz    "; vector80 0x%x<x>, 0x%x<y>, 0x%x<z>"
 
 ENDSENUM
   BFD_RELOC_UNUSED

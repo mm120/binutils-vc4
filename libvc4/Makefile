@@ -2,7 +2,7 @@
 all: decode
 
 CC = gcc
-CFLAGS = -g -Wall -Wextra
+CFLAGS = -g -Wall -Wextra -O0
 
 libvc4.a: vc4_util.o vc4_arch.o vc4_decode.o eval.o
 	@rm -f $@
