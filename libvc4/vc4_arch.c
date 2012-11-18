@@ -1080,7 +1080,9 @@ static void vc4_go_expand(struct vc4_info *info,
 		return;
 	}
 
-	r = sscanf(c, "%m[^{]{%m[^}]}%n", &fmt, &exp, &l0);
+	fmt = malloc(1024);
+	exp = malloc(1024);
+	r = sscanf(c, "%[^{]{%[^}]}%n", fmt, exp, &l0);
 
 	if (r < 2 || fmt == NULL || exp == NULL) {
 		fprintf(stderr, "bad line '%s'\n", str);
@@ -1260,14 +1262,17 @@ void vc4_get_opcodes(struct vc4_info *info)
 	pat.count = 0;
 
 	assert(info->all_asms == NULL);
+	
+	str = malloc(1024);
 
 	for (op = info->all_opcodes; op != NULL; op = op->next) {
 
-		sscanf(op->format, "%ms ", &str);
+		sscanf(op->format, "%s ", str);
 		if (str[0] != '!')
 			vc4_go_expand(info, op, str, &pat);
-		free(str);
 	}
+	
+	free(str);
 
 	vc4_find_relax(info);
 }
