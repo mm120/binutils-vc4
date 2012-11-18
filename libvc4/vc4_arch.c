@@ -917,6 +917,7 @@ struct vc4_info *vc4_read_arch_file(const char *path)
 	}
 
 	inf = calloc(sizeof(struct vc4_info), 1);
+	buf = malloc(1024);
 
 	for (;;) {
 		if ((r = getline(&line, &len, fp)) < 0)
@@ -930,17 +931,17 @@ struct vc4_info *vc4_read_arch_file(const char *path)
 			buf2[0] = ch;
 			buf2[1] = 0;
 			strcat(inf->signed_ops, buf2);
-		} else if (sscanf(line, " ( define-table %c [ %m[^]]+ ] ) ", &ch, &buf) == 2) {
+		} else if (sscanf(line, " ( define-table %c [ %[^]]+ ] ) ", &ch, buf) == 2) {
 			struct vc4_decode_table *t = vc4_read_table(ch, buf);
 			t->next = inf->tables;
 			inf->tables = t;
-			free(buf);
 		} else {
 			vc4_read_opcode(inf, line);
 		}
 	}
 
 	free(line);
+	free(buf);
 
 	fclose(fp);
 

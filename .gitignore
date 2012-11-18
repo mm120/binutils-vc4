@@ -13,6 +13,7 @@
 *.lo
 *.o
 *.tmp
+*.exe
 
 .deps
 .libs

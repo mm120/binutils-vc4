@@ -26,8 +26,8 @@
 #include "elf-bfd.h"
 #include "elf/vc4.h"
 #include "libiberty.h"
+#include "safe-ctype.h"
 #include <assert.h>
-#include <ctype.h>
 
 bfd_reloc_status_type
 vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
@@ -1023,7 +1023,7 @@ static void string_to_mask(const char *str, char code, uint128_t *maskp, size_t 
   wc = 0;
   i = 0;
   for (; *str; str++ ) {
-    if (isblank(*str)) {
+    if (ISBLANK(*str)) {
       continue;
     }
 
