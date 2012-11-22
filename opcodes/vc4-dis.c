@@ -23,7 +23,7 @@
 #include "sysdep.h"
 #include "dis-asm.h"
 #include "libiberty.h"
-#include "vc4.h"
+#include "opcode/vc4.h"
 #include <assert.h>
 #include <ctype.h>
 

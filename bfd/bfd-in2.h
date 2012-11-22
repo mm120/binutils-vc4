@@ -5506,9 +5506,6 @@ giving a 16 bit signed byte offset.  */
 /* Adapteva EPIPHANY - 8 bit immediate for 16 bit mov instruction.  */
   BFD_RELOC_EPIPHANY_IMM8,
 
-/* VideoCore IV 32-bit number (in uint16's 1 & 2)  */
-  BFD_RELOC_VC4_ABS32,
-
 /* VideoCore IV 7-bit number (in uint16 0)
 
 0001 1ccc cooo oooo                  "; b%s<c> 0x%08x<$+o*2>"  */
@@ -5566,7 +5563,9 @@ u
 /* VideoCore IV 6-bit number (in uint16 2)  */
   BFD_RELOC_VC4_IMM6,
 
-/* VideoCore IV 16-bit number (in uint16 2)  */
+/* VideoCore IV 16-bit number (in uint16 2)
+
+0001 0ooo ooo1 1001  */
   BFD_RELOC_VC4_IMM6_MUL4,
 
 /* VideoCore IV 11-bit number (in uint16 2)
@@ -5577,7 +5576,7 @@ x
 
 /* VideoCore IV 11-bit number (in uint16 2)
 
-o (not split filed)
+o (note split field)
 1010 001o ww0d dddd ssss sooo oooo oooo  "; ld%s<w> r%i<d>, 0x%x<o>(r%i<s>)"  */
   BFD_RELOC_VC4_IMM12,
 

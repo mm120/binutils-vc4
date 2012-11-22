@@ -54,4 +54,7 @@ label:
 
 	ld	r1,(r2,r3)
 
+	st12	r0, 0x123(r0), 0
+	
+	ld	r7,BIG_NUM
 	

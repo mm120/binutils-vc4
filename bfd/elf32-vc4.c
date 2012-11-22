@@ -154,7 +154,7 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_PCREL27",      /* name */
+	 "R_VC4_PCREL27_MUL2",  /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0x07ffffff,		/* dst_mask */
@@ -259,14 +259,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM11",        /* name */
+	 "R_VC4_IMM12",         /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 16 bit relocation.  */
-  HOWTO (R_VC4_IMM16,          /* type */
+  HOWTO (R_VC4_IMM16,           /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 16,			/* bitsize */
@@ -274,14 +274,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM16",        /* name */
+	 "R_VC4_IMM16",         /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 23 bit relocation.  */
-  HOWTO (R_VC4_IMM23,          /* type */
+  HOWTO (R_VC4_IMM23,           /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 23,			/* bitsize */
@@ -289,7 +289,7 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM23",        /* name */
+	 "R_VC4_IMM23",         /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
@@ -304,14 +304,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM27",        /* name */
+	 "R_VC4_IMM27",         /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 32 bit relocation.  */
-  HOWTO (R_VC4_IMM32,          /* type */
+  HOWTO (R_VC4_IMM32,           /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 32,			/* bitsize */
@@ -319,14 +319,14 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM32",        /* name */
+	 "R_VC4_IMM32",         /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
   /* A absolute 32 bit relocation.  */
-  HOWTO (R_VC4_IMM32_2,        /* type */
+  HOWTO (R_VC4_IMM32_2,         /* type */
 	 0,			/* rightshift */
 	 2,			/* size (0 = byte, 1 = short, 2 = long) */
 	 32,			/* bitsize */
@@ -334,7 +334,7 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 vc4_elf_reloc,		/* special_function */
-	 "R_VC4_IMM32_2",      /* name */
+	 "R_VC4_IMM32_2",       /* name */
 	 FALSE,			/* partial_inplace */
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
@@ -358,6 +358,11 @@ struct vc4_bfd_fixup_table2
   size_t width;
   size_t length;
   uint128_t mask;
+  struct {
+    uint16_t ins_mask;
+    uint16_t ins_word;
+    int16_t val_shift;
+  } fix[4];
 };
 
 static const struct vc4_bfd_fixup_table bfd_fixup_table[] =
@@ -470,6 +475,7 @@ static void vc4_poke_reloc_value(bfd *input_bfd, bfd_byte *contents, unsigned in
 	ins[i] = bfd_get_16(input_bfd, contents + i * 2);
       }
 
+      printf("%x %x %x\n",ins[0],ins[1],ins[2]);
       vc4_bfd_fixup_set(bfd_fixup_table[type].bfd_reloc_val, ins, srel);
 
       for (i = 0; i < len; i++) {
@@ -519,6 +525,8 @@ vc4_final_link_relocate (reloc_howto_type *howto,
     case R_VC4_IMM27:
     case R_VC4_IMM32:
     case R_VC4_IMM32_2:
+
+      printf("%s: %d 0x%x %d\n", __func__, howto->type, (int)rel->r_offset, (int)relocation);
 
       contents += rel->r_offset;
       srel = (bfd_signed_vma) relocation;
@@ -603,7 +611,7 @@ vc4_elf_relocate_section (bfd *output_bfd,
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
 
-  printf("vc4_elf_relocate_section\n");
+  printf("%s\n", __func__);
 
   symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
@@ -876,10 +884,10 @@ vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
 
 static asection *
 vc4_elf_gc_mark_hook (asection *sec,
-			   struct bfd_link_info *info,
-			   Elf_Internal_Rela *rel,
-			   struct elf_link_hash_entry *h,
-			   Elf_Internal_Sym *sym)
+		      struct bfd_link_info *info,
+		      Elf_Internal_Rela *rel,
+		      struct elf_link_hash_entry *h,
+		      Elf_Internal_Sym *sym)
 {
   if (h != NULL)
     switch (ELF32_R_TYPE (rel->r_info))
@@ -898,9 +906,9 @@ vc4_elf_gc_mark_hook (asection *sec,
 
 static bfd_boolean
 vc4_elf_check_relocs (bfd *abfd,
-			   struct bfd_link_info *info,
-			   asection *sec,
-			   const Elf_Internal_Rela *relocs)
+		      struct bfd_link_info *info,
+		      asection *sec,
+		      const Elf_Internal_Rela *relocs)
 {
   Elf_Internal_Shdr *symtab_hdr;
   struct elf_link_hash_entry **sym_hashes;
@@ -1056,11 +1064,46 @@ static void string_to_mask(const char *str, char code, uint128_t *maskp, size_t 
     *maskp = mask;
 }
 
+static uint16_t count_z_lsbs(uint16_t v)
+{
+  uint16_t r;
+
+  assert(v != 0);
+
+  r = 0;
+  while ((v & 1) == 0) {
+    v >>= 1;
+    r++;
+  }
+
+  return r;
+}
+
+static uint16_t popcount(uint16_t v)
+{
+  uint16_t r;
+
+  assert(v != 0);
+
+  r = 0;
+  while (v != 0) {
+    v = v & (v - 1);
+    r++;
+  }
+
+  return r;
+}
+
 static void make_tab2(void)
 {
   size_t i;
   uint128_t mask;
   size_t len;
+  size_t word_pos = 0;
+  uint16_t bit_pos = 1;
+  uint16_t ins_mask = 0;
+  size_t j;
+  int16_t shift = 0;
 
   if (bfd_fixup_table_done)
     return;
@@ -1093,18 +1136,75 @@ static void make_tab2(void)
     }
     assert(len > 0 && len <= 5);
     bfd_fixup_table2[i].length = len;
+
+    mask = bfd_fixup_table2[i].mask;
+    len = bfd_fixup_table2[i].length;
+    word_pos = 0;
+    bit_pos = 1;
+    ins_mask = 0;
+    shift = bfd_fixup_table2[i].width;
+    j = 0;
+
+    while (mask.hi != 0 || mask.lo != 0) {
+
+      if (mask.lo & 1) {
+	ins_mask |= bit_pos;
+      } else if (ins_mask != 0) {
+	shift -= popcount(ins_mask);
+	bfd_fixup_table2[i].fix[j].ins_mask = ins_mask;
+	bfd_fixup_table2[i].fix[j].ins_word = word_pos;
+	bfd_fixup_table2[i].fix[j].val_shift = shift + count_z_lsbs(ins_mask);
+	j++;
+	ins_mask = 0;
+      }
+
+      uint128_shr(&mask, 1);
+
+      bit_pos <<= 1;
+      if (bit_pos == 0) {
+	if (ins_mask != 0) {
+	  shift -= popcount(ins_mask);
+	  bfd_fixup_table2[i].fix[j].ins_mask = ins_mask;
+	  bfd_fixup_table2[i].fix[j].ins_word = word_pos;
+	  bfd_fixup_table2[i].fix[j].val_shift = shift + count_z_lsbs(ins_mask);
+	  j++;
+	}
+	ins_mask = 0;
+	bit_pos = 0x0001;
+	word_pos++;
+      }
+    }
+
+    if (ins_mask != 0) {
+      shift -= popcount(ins_mask);
+      bfd_fixup_table2[i].fix[j].ins_mask = ins_mask;
+      bfd_fixup_table2[i].fix[j].ins_word = word_pos;
+      bfd_fixup_table2[i].fix[j].val_shift = shift + count_z_lsbs(ins_mask);
+      j++;
+    }
+
+    assert(shift == 0);
   }
-/*
+
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
-    printf("TAB %4d %2d %d %016llx%016llx %-20s %s\n",
+    printf("TAB %4d %2d %d %016llx%016llx %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %s\n",
 	   bfd_fixup_table[i].bfd_reloc_val, i,
 	   bfd_fixup_table2[i].length,
 	   bfd_fixup_table2[i].mask.hi,
 	   bfd_fixup_table2[i].mask.lo,
 	   vc4_elf_howto_table[i].name,
+	   bfd_fixup_table2[i].fix[0].ins_mask,
+	   bfd_fixup_table2[i].fix[0].ins_word,
+	   bfd_fixup_table2[i].fix[0].val_shift,
+	   bfd_fixup_table2[i].fix[1].ins_mask,
+	   bfd_fixup_table2[i].fix[1].ins_word,
+	   bfd_fixup_table2[i].fix[1].val_shift,
+	   bfd_fixup_table2[i].fix[2].ins_mask,
+	   bfd_fixup_table2[i].fix[2].ins_word,
+	   bfd_fixup_table2[i].fix[2].val_shift,
 	   bfd_fixup_table[i].str);
   }
-*/
+
 }
 
 bfd_reloc_code_real_type vc4_bfd_fixup_get(const char *str, char code, int pc_rel, int divide)
@@ -1211,6 +1311,7 @@ static char *dump_uint16s(char *buf, const uint16_t *dat, size_t len)
   for (i = 0, o = 0; i < len; i++) {
     o += sprintf(buf + o, " %04x", dat[i]);
   }
+
   return buf + 1;
 }
 
@@ -1218,32 +1319,20 @@ void vc4_bfd_fixup_set(bfd_reloc_code_real_type bfd_fixup, uint16_t *ins, long v
 {
   uint128_t mask = vc4_bfd_fixup_get_mask(bfd_fixup);
   size_t len = vc4_bfd_fixup_get_length(bfd_fixup);
-  size_t word_pos = 0;
-  uint16_t bit_pos = 1;
+  size_t i = vc4_bfd_fixup_get_elf(bfd_fixup);
   char buf[80];
+  size_t j;
 
-  printf("%s: %s = %ld (%d)  %llx%llx\n", __func__,
-	 dump_uint16s(buf, ins, len),
+  printf("%s: %s = %ld (%d)  %llx%llx\n", __func__, dump_uint16s(buf, ins, len),
 	 val, bfd_fixup, mask.hi, mask.lo);
 
-  while (mask.hi != 0 || mask.lo != 0) {
+  for (j = 0; bfd_fixup_table2[i].fix[j].ins_mask; j++) {
+    uint16_t iw = bfd_fixup_table2[i].fix[j].ins_word;
+    uint16_t im = bfd_fixup_table2[i].fix[j].ins_mask;
+    int16_t vs = bfd_fixup_table2[i].fix[j].val_shift;
 
-    if (mask.lo & 1) {
-      if (val & 1) {
-	ins[word_pos] |= bit_pos;
-      } else {
-	ins[word_pos] &= ~bit_pos;
-      }
-      val >>= 1;
-    }
-
-    uint128_shr(&mask, 1);
-
-    bit_pos <<= 1;
-    if (bit_pos == 0) {
-      bit_pos = 0x0001;
-      word_pos++;
-    }
+    ins[iw] &= im ^ 0xFFFF;
+    ins[iw] |= im & ((vs < 0) ? (val >> -vs) : (val << vs));
   }
 
   printf("%s: %s done\n", __func__, dump_uint16s(buf, ins, len));

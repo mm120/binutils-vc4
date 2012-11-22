@@ -142,6 +142,7 @@ ALL_MACHINES = \
 	cpu-tilepro.lo \
 	cpu-v850.lo \
 	cpu-vax.lo \
+	cpu-vc4.lo \
 	cpu-w65.lo \
 	cpu-we32k.lo \
 	cpu-xc16x.lo \

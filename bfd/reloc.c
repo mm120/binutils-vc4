@@ -6577,11 +6577,6 @@ ENUMDOC
   Adapteva EPIPHANY - 8 bit immediate for 16 bit mov instruction.
 
 ENUM
-  BFD_RELOC_VC4_ABS32
-ENUMDOC
-  VideoCore IV 32-bit number (in uint16's 1 & 2)
-
-ENUM
   BFD_RELOC_VC4_REL7_MUL2
 ENUMDOC
   VideoCore IV 7-bit number (in uint16 0)

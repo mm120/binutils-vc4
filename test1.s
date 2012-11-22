@@ -21,6 +21,8 @@
 	.equ AUX_MU_STAT_REG, 0x7e215064
 	.equ AUX_MU_BAUD_REG, 0x7e215068
 
+	.equ	BIG_NUM, 0x12345678
+	.global BIG_NUM
 .text
 	.global _start
 _start:	

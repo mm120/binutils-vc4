@@ -1,14 +1,13 @@
 ## Process this file with automake to generate Makefile.in
 
 AUTOMAKE_OPTIONS = 1.11 foreign no-dist
-ACLOCAL_AMFLAGS = -I .. -I ../config -I ../bfd -I ../libvc4
+ACLOCAL_AMFLAGS = -I .. -I ../config -I ../bfd
 
 # Build '.' first so all generated files exist.
 SUBDIRS = . po
 
 INCDIR = $(srcdir)/../include
 BFDDIR = $(srcdir)/../bfd
-VC4DIR = $(srcdir)/../libvc4
 
 WARN_CFLAGS = @WARN_CFLAGS@
 NO_WERROR = @NO_WERROR@
@@ -231,6 +230,7 @@ TARGET_LIBOPCODES_CFILES = \
 	v850-dis.c \
 	v850-opc.c \
 	vax-dis.c \
+	vc4-opc.c \
 	vc4-dis.c \
 	w65-dis.c \
 	xc16x-asm.c \
@@ -280,7 +280,7 @@ OFILES = @BFD_MACHINES@
 # that's where the version number in Makefile comes from.
 CONFIG_STATUS_DEPENDENCIES = $(BFDDIR)/configure.in
 
-AM_CPPFLAGS = -I. -I$(srcdir) -I../bfd -I$(INCDIR) -I$(BFDDIR) @HDEFINES@ @INCINTL@ -I$(VC4DIR)
+AM_CPPFLAGS = -I. -I$(srcdir) -I../bfd -I$(INCDIR) -I$(BFDDIR) @HDEFINES@ @INCINTL@
 
 disassemble.lo: disassemble.c
 if am__fastdepCC

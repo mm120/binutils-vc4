@@ -23,12 +23,13 @@
 #include "as.h"
 #include "subsegs.h"
 #include "symcat.h"
-#include "vc4.h"
 #include <ctype.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <assert.h>
+
 #include "elf/vc4.h"
+#include "opcode/vc4.h"
 
 const char comment_chars[]        = "#";
 const char line_comment_chars[]   = "#";
@@ -116,10 +117,13 @@ void
 md_begin (void)
 {
   struct vc4_asm *a;
+  char *arch;
 
   if (vc4_info == NULL) {
-    vc4_info = vc4_read_arch_file(
-      "/home/marmar01/src/rpi/videocoreiv/videocoreiv.arch");
+    arch = getenv("VC4_ARCH");
+    if (arch == NULL)
+      arch = "/home/marmar01/src/rpi/videocoreiv/videocoreiv.arch";
+    vc4_info = vc4_read_arch_file(arch);
   }
   vc4_get_opcodes(vc4_info);
 
@@ -832,14 +836,44 @@ static void output_num(struct fixup_op_info *roi, uint16_t *ins,
 		       int pc_rel, int divide)
 {
   if (op->exp.X_op == O_constant) {
-    if (op->exp.X_add_number > (1LL << param->num_width)) {
-      roi->broken = 1;
+
+    signed long long val = op->exp.X_add_number;
+    signed long long v_min;
+    signed long long v_max;
+
+    if (divide > 1) {
+      if (val % divide) {
+	roi->broken = 1;
+      }
+      val /= divide;
     }
-    if ((divide > 1) && (op->exp.X_add_number % divide)) {
-      roi->broken = 1;
+
+    if (param->num_width == 32) {
+      // No overflow checking needed!
+    } else {
+
+      if (vc4_param_has_num(param->type) < 0) {
+
+	// signed
+	v_min = -(1LL << (param->num_width - 1));
+	v_max = (1LL << (param->num_width - 1)) - 1;
+
+      } else {
+
+	// unsigned
+	v_min = 0;
+	v_max = (1LL << param->num_width) - 1;
+      }
+
+      if (val < v_min || val > v_max) {
+	roi->broken = 1;
+      }
+
+      printf("ON: %lld %d %d (%lld %lld)\n", val, param->num_width, roi->broken,
+	     v_min, v_max);
     }
-    fill_value(ins, opcode->op, param->num_code,
-	       op->exp.X_add_number / divide);
+
+    fill_value(ins, opcode->op, param->num_code, (uint32_t)val);
   } else {
     if (roi->set)
       as_bad("Can't have two relax op's");
@@ -1269,7 +1303,7 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 	case BFD_RELOC_VC4_IMM11:
 	case BFD_RELOC_VC4_IMM12:
 	case BFD_RELOC_VC4_IMM16:
-      /*case BFD_RELOC_VC4_IMM23:*/
+	case BFD_RELOC_VC4_IMM23:
 	case BFD_RELOC_VC4_IMM27:
 	case BFD_RELOC_VC4_IMM32:
 	case BFD_RELOC_VC4_IMM32_2:

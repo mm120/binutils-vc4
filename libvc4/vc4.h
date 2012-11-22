@@ -37,36 +37,36 @@ struct vc4_decode_table
 	VC4_PX(m, (num_u_lsr_p1,   0, 0, 0, 0)) \
 	VC4_PX(m, (num_s_lsr_p1,   0, 0, 0, 0)) \
  \
-	VC4_PX(m, (num_u,          0, 1, 0, 1))	/* unsigned int             #0x%04x{u} */ \
-	VC4_PX(m, (num_s,          0, 1, 0, 1))	/* signed int               #0x%04x{i} */ \
-	VC4_PX(m, (num_u4,         0, 1, 0, 4))	/* unsigned int             #0x%04x{u*4} */ \
-	VC4_PX(m, (num_s4,         0, 1, 0, 4))	/* signed int               #0x%04x{i*4} */ \
-	VC4_PX(m, (addr_reg_0_15,  1, 0, 0, 0))	/* addr of reg              (r%i{s}) */ \
-	VC4_PX(m, (addr_reg_0_31,  1, 0, 0, 0))	/* addr of reg              (r%i{s}) */ \
+	VC4_PX(m, (num_u,          0,  1, 0, 1))	/* unsigned int             #0x%04x{u} */ \
+	VC4_PX(m, (num_s,          0, -1, 0, 1))	/* signed int               #0x%04x{i} */ \
+	VC4_PX(m, (num_u4,         0,  1, 0, 4))	/* unsigned int             #0x%04x{u*4} */ \
+	VC4_PX(m, (num_s4,         0, -1, 0, 4))	/* signed int               #0x%04x{i*4} */ \
+	VC4_PX(m, (addr_reg_0_15,  1,  0, 0, 0))	/* addr of reg              (r%i{s}) */ \
+	VC4_PX(m, (addr_reg_0_31,  1,  0, 0, 0))	/* addr of reg              (r%i{s}) */ \
 	VC4_PX(m, (addr_2reg_begin_0_31,  1, 0, 0, 0))	/* addr of reg              (r%i{s} */ \
 	VC4_PX(m, (addr_2reg_end_0_31,    1, 0, 0, 0))	/* addr of reg              r%i{s}) */ \
 	VC4_PX(m, (addr_reg_num_u, 1, 1, 0, 1))	/* addr of reg + unsigned   0x%04x{u}(r%i{s}) */ \
-	VC4_PX(m, (addr_reg_num_s, 1, 1, 0, 1))	/* addr of reg + signed     0x%04x{i}(r%i{s}) */ \
+	VC4_PX(m, (addr_reg_num_s, 1, -1, 0, 1))	/* addr of reg + signed     0x%04x{i}(r%i{s}) */ \
 	VC4_PX(m, (addr_reg_0_15_num_u4, 1, 1, 0, 4)) /* addr of reg + unsigned   0x%04x{u*4}(r%i{s}) */ \
-	VC4_PX(m, (addr_reg_0_15_num_s4, 1, 1, 0, 4)) /* addr of reg + signed     0x%04x{i*4}(r%i{s}) */ \
+	VC4_PX(m, (addr_reg_0_15_num_s4, 1, -1, 0, 4)) /* addr of reg + signed     0x%04x{i*4}(r%i{s}) */ \
 	VC4_PX(m, (addr_reg_post_inc, 1, 0, 0, 0)) /* addr of reg              (r%i{s})++ */ \
 	VC4_PX(m, (addr_reg_pre_dec,  1, 0, 0, 0)) /* addr of reg              --(r%i{s}) */ \
  \
-	VC4_PX(m, (r0_rel_s,    0, 1, 0, 1))	/* r0 rel addr + signed    0x%08x{r0+o} */ \
-	VC4_PX(m, (r0_rel_s2,   0, 1, 0, 2))	/* r0 rel addr + signed    0x%08x{r0+o*2} */ \
-	VC4_PX(m, (r0_rel_s4,   0, 1, 0, 4))	/* r0 rel addr + signed    0x%08x{r0+o*4} */ \
+	VC4_PX(m, (r0_rel_s,    0, -1, 0, 1))	/* r0 rel addr + signed    0x%08x{r0+o} */ \
+	VC4_PX(m, (r0_rel_s2,   0, -1, 0, 2))	/* r0 rel addr + signed    0x%08x{r0+o*2} */ \
+	VC4_PX(m, (r0_rel_s4,   0, -1, 0, 4))	/* r0 rel addr + signed    0x%08x{r0+o*4} */ \
  \
-	VC4_PX(m, (r24_rel_s,   0, 1, 0, 1))	/* r24 rel addr + signed    0x%08x{r24+o} */ \
-	VC4_PX(m, (r24_rel_s2,  0, 1, 0, 2))	/* r24 rel addr + signed    0x%08x{r24+o*2} */ \
-	VC4_PX(m, (r24_rel_s4,  0, 1, 0, 4))	/* r24 rel addr + signed    0x%08x{r24+o*4} */ \
+	VC4_PX(m, (r24_rel_s,   0, -1, 0, 1))	/* r24 rel addr + signed    0x%08x{r24+o} */ \
+	VC4_PX(m, (r24_rel_s2,  0, -1, 0, 2))	/* r24 rel addr + signed    0x%08x{r24+o*2} */ \
+	VC4_PX(m, (r24_rel_s4,  0, -1, 0, 4))	/* r24 rel addr + signed    0x%08x{r24+o*4} */ \
  \
-	VC4_PX(m, (sp_rel_s,    0, 1, 0, 1))	/* sp rel addr + signed     0x%08x{sp+o} */ \
-	VC4_PX(m, (sp_rel_s2,   0, 1, 0, 2))	/* sp rel addr + signed     0x%08x{sp+o*2} */ \
-	VC4_PX(m, (sp_rel_s4,   0, 1, 0, 4))	/* sp rel addr + signed     0x%08x{sp+o*4} */ \
+	VC4_PX(m, (sp_rel_s,    0, -1, 0, 1))	/* sp rel addr + signed     0x%08x{sp+o} */ \
+	VC4_PX(m, (sp_rel_s2,   0, -1, 0, 2))	/* sp rel addr + signed     0x%08x{sp+o*2} */ \
+	VC4_PX(m, (sp_rel_s4,   0, -1, 0, 4))	/* sp rel addr + signed     0x%08x{sp+o*4} */ \
  \
-	VC4_PX(m, (pc_rel_s,   0, 1, 1, 1))	/* pc rel addr + signed     0x%08x{$+o} */ \
-	VC4_PX(m, (pc_rel_s2,  0, 1, 1, 2))	/* pc rel addr + signed     0x%08x{$+o*2} */ \
-	VC4_PX(m, (pc_rel_s4,  0, 1, 1, 4))	/* pc rel addr + signed     0x%08x{$+o*4} */ \
+	VC4_PX(m, (pc_rel_s,    0, -1, 1, 1))	/* pc rel addr + signed     0x%08x{$+o} */ \
+	VC4_PX(m, (pc_rel_s2,   0, -1, 1, 2))	/* pc rel addr + signed     0x%08x{$+o*2} */ \
+	VC4_PX(m, (pc_rel_s4,   0, -1, 1, 4))	/* pc rel addr + signed     0x%08x{$+o*4} */ \
 
 
 #define VC4_PX(a, b) VC4_PX_ ## a b

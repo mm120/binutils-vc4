@@ -155,7 +155,7 @@ static const struct vc4_param_info vc4_param_info[] =
 const char *vc4_param_name(enum vc4_param_type type)
 {
 	if (type >= vc4_p_MAX)
-		return vc4_param_info[type].name;
+		return vc4_param_info[vc4_p_unknown].name;
 	return vc4_param_info[type].name;
 }
 
@@ -243,27 +243,27 @@ char *vc4_param_print(const struct vc4_param *par, char *buf)
 int vc4_param_has_reg(enum vc4_param_type type)
 {
 	if (type >= vc4_p_MAX)
-		return vc4_param_info[type].has_reg;
+		return vc4_param_info[vc4_p_unknown].has_reg;
 	return vc4_param_info[type].has_reg;
 }
 
 int vc4_param_has_num(enum vc4_param_type type)
 {
 	if (type >= vc4_p_MAX)
-		return vc4_param_info[type].has_num;
+		return vc4_param_info[vc4_p_unknown].has_num;
 	return vc4_param_info[type].has_num;
 }
 
 int vc4_param_pc_rel(enum vc4_param_type type)
 {
 	if (type >= vc4_p_MAX)
-		return vc4_param_info[type].pc_rel;
+		return vc4_param_info[vc4_p_unknown].pc_rel;
 	return vc4_param_info[type].pc_rel;
 }
 
 int vc4_param_divide(enum vc4_param_type type)
 {
 	if (type >= vc4_p_MAX)
-		return vc4_param_info[type].divide;
+		return vc4_param_info[vc4_p_unknown].divide;
 	return vc4_param_info[type].divide;
 }

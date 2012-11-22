@@ -1,4 +1,3 @@
-make -C libvc4 -j12
 make -j12
 #VAL="valgrind --leak-check=full --log-fd=1"
 #VAL=time
