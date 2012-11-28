@@ -5,6 +5,27 @@
 
 uint16_t get_le16(const uint8_t *b);
 
+enum vc4_ins_mode
+{
+	VC4_INS_SCALAR16,
+	VC4_INS_SCALAR32_1,
+	VC4_INS_SCALAR32_2,
+	VC4_INS_SCALAR48,
+	VC4_INS_VECTOR48,
+	VC4_INS_VECTOR80,
+};
+
+struct vc4_insn
+{
+	uint16_t w0;
+	union {
+		uint16_t s32;
+		uint32_t s48;
+		uint16_t v48[2];
+		uint16_t v80[4];
+	} u;
+};
+
 struct vc4_decode_table
 {
 	struct vc4_decode_table *next;
@@ -101,6 +122,8 @@ struct vc4_opcode
 {
 	struct vc4_opcode *next;
 
+	enum vc4_ins_mode mode;
+
 	char string[81];
 	char *format;
 	size_t length;
@@ -165,6 +188,7 @@ struct vc4_info
 
 uint16_t vc4_get_le16(const uint8_t *b);
 
+enum vc4_ins_mode vc4_get_instruction_mode(uint16_t b0);
 uint16_t vc4_get_instruction_length(uint16_t b0);
 
 struct vc4_info *vc4_read_arch_file(const char *path);

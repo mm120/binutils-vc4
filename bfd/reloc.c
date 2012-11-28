@@ -6635,6 +6635,14 @@ ENUMDOC
   1110 0101 000d dddd oooo oooo oooo oooo oooo oooo oooo oooo  "; lea r%i<d>, 0x%08x<$+o> ;(pc)"
 
 ENUM
+  BFD_RELOC_VC4_IMM5_MUL4
+ENUMDOC
+  VideoCore IV 5-bit number (in uint16 1)
+
+  o
+  0000 010o oooo dddd  "; ld r%i<d>, 0x%02x<o*4>(sp)"
+
+ENUM
   BFD_RELOC_VC4_IMM5_1
 ENUMDOC
   VideoCore IV 5-bit number (in uint16 2)

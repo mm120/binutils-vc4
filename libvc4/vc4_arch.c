@@ -692,9 +692,15 @@ static void vc4_add_opcode(struct vc4_info *info, struct vc4_opcode *op)
 {
 	uint32_t i;
 
+	assert(op->length >= 1 && op->length <= 5);
+
+	vc4_parse_string16(op->string, &op->ins[0], &op->ins_mask[0]);
+
+	op->mode = vc4_get_instruction_mode(op->ins[0]);
+
 	vc4_build_params(op);
-/*
-	printf("> %-30s %s\n", op->format, op->string);
+#if 0
+	printf("> %-30s %s  %04x %d %d\n", op->format, op->string, op->ins[0], op->length, vc4_get_instruction_length(op->ins[0]));
 	
 	for (i = 0; i< op->num_params; i++) {
 		printf("  p%d = %-15s %d %d %d %c\n", i + 1,
@@ -704,15 +710,14 @@ static void vc4_add_opcode(struct vc4_info *info, struct vc4_opcode *op)
 		       op->params[i].num_width,
 		       op->params[i].reg_code);
 	}
-*/
-	vc4_parse_string16(op->string, &op->ins[0], &op->ins_mask[0]);
+#endif
+
+	assert(op->length == vc4_get_instruction_length(op->ins[0]));
 
 	for (i = 0; i <= (op->ins_mask[0] ^ 0xFFFFu); i++) {
 		uint16_t x = op->ins[0] | (i & (op->ins_mask[0] ^ 0xFFFF));
 		vc4_add_opcode_tab(&info->opcodes[x], op);
 	}
-
-	assert(op->length >= 1 && op->length <= 5);
 
 	if (op->length == 1)
 		return;
@@ -721,7 +726,7 @@ static void vc4_add_opcode(struct vc4_info *info, struct vc4_opcode *op)
 }
 
 
-
+#if 0
 static struct vc4_opcode *vc4_scan_opcode_old(const char *line)
 {
 	const char *p;
@@ -792,43 +797,60 @@ static struct vc4_opcode *vc4_scan_opcode_old(const char *line)
 
 	return op;
 }
+#endif
+
+static int scan_format(char *d, const char **pp)
+{
+	int bits = 0;
+	const char *p = *pp;
+	char *dd = d;
+
+	for (;;) {
+		if (isspace(*p)) {
+			p++;
+			continue;
+		}
+		if (*p == '"')
+			break;
+		if (*p == ':') {
+			long count;
+			char *end;
+			assert(bits > 0);
+			count = strtol(p+1, &end, 10);
+			assert(count > 0 && count <= 32);
+			while (count-- > 1) {
+				if (d != NULL)
+					*d++ = 	p[-1];
+				bits++;
+			}
+			p = end;
+		} else if (vc4_isopcode(p[0])) {
+			if (d != NULL)
+				*d++ = *p;
+			p++;
+			bits++;
+		} else {
+			return -1;
+		}
+	}
+	if (d != NULL)
+		*d = 0;
+	*pp = p;
+	assert(d == NULL || (d - dd) == bits);
+	return bits;
+}
 
 static struct vc4_opcode *vc4_scan_opcode(const char *line)
 {
 	const char *p;
-	char *d;
 	char *format;
 	int bits;
 	struct vc4_opcode *op;
 
-	op = vc4_scan_opcode_old(line);
-	if (op != NULL)
-		return op;
-
 	p = line;
-	for (bits = 0; ; ) {
-		while (*p && isspace(*p))
-			p++;
-		if (!*p)
-			return NULL;
-		if (*p == '"')
-			break;
-		if (vc4_isopcode(p[0]) && (vc4_isopcode(p[1]) || isspace(p[1]))) {
-			bits++;
-			p++;
-			continue;
-		}
-		if (vc4_isopcode(p[0]) && (p[1] == ':')) {
-			long count;
-			char *end;
-			count = strtol(p+2, &end, 10);
-			assert(count > 0 && count <= 32);
-			p = end;
-			bits += count;
-			continue;
-		}
-		assert(0);
-	}
+	bits = scan_format(NULL, &p);
+	if  (bits < 0)
+		return NULL;
 
 	if ((bits % 16) != 0) {
 		fprintf(stderr, "Wrong number of nybles 2!\n");
@@ -858,31 +880,7 @@ static struct vc4_opcode *vc4_scan_opcode(const char *line)
 	op->length = bits / 16;
 
 	p = line;
-	d = op->string;
-	for (;;) {
-		if (isspace(*p)) {
-			p++;
-			continue;
-		}
-		if (*p == '"')
-			break;
-		if (*p == ':') {
-			long count;
-			char *end;
-			assert(p > line);
-			count = strtol(p+1, &end, 10);
-			assert(count > 0 && count <= 32);
-			while (count-- > 1) {
-				*d++ = 	p[-1];
-			}
-			p = end;
-		} else {
-			*d++ = *p++;
-		}
-	}
-	*d = 0;
-
-	assert((d - op->string) == bits);
+	scan_format(op->string, &p);
 
 	return op;
 }

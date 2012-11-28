@@ -17,25 +17,36 @@ uint16_t vc4_get_le16(const uint8_t *b)
 	return (uint16_t)b[0] | ((uint16_t)b[1] << 8);
 }
 
+enum vc4_ins_mode vc4_get_instruction_mode(uint16_t b0)
+{
+	if ((b0 & 0x8000) == 0)
+		return VC4_INS_SCALAR16;
+	else if ((b0 & 0x4000) == 0)
+		return VC4_INS_SCALAR32_1;
+	else if ((b0 & 0x2000) == 0)
+		return VC4_INS_SCALAR32_2;
+	else if ((b0 & 0x1000) == 0)
+		return VC4_INS_SCALAR48;
+	else if ((b0 & 0x0800) == 0)
+		return VC4_INS_VECTOR48;
+	else
+		return VC4_INS_VECTOR80;
+}
+
 uint16_t vc4_get_instruction_length(uint16_t b0)
 {
 	if ((b0 & 0x8000) == 0)
 		return 1;
-	else if ((b0 & 0xc000) == 0x8000)
+	else if ((b0 & 0x4000) == 0)
 		return 2;
-	else if ((b0 & 0xe000) == 0xc000)
+	else if ((b0 & 0x2000) == 0)
 		return 2;
-	else if ((b0 & 0xf000) == 0xe000)
+	else if ((b0 & 0x1000) == 0)
 		return 3;
-	else if ((b0 & 0xf800) == 0xf000)
+	else if ((b0 & 0x0800) == 0)
 		return 3;
-	else if ((b0 & 0xf800) == 0xf800)
+	else
 		return 5;
-	else {
-		/*throw "Bad instruction format, cant get length %x" % b0*/
-		fprintf(stderr, "Can't get length of %04x\n", b0);
-		abort();
-	}
 }
 
 void vc4_trim_space(char *p)
@@ -95,19 +106,78 @@ void vc4_add_opcode_tab(struct vc4_opcode_tab **tabp, struct vc4_opcode *op)
 	*tabp = tab;
 }
 
+static void fill_value_u32(uint32_t *ins, uint32_t *ins_mask,
+			   const char *f,
+			   char code, uint32_t val)
+{
+	uint32_t mask;
+
+	*ins = 0;
+	if (ins_mask != NULL)
+		*ins_mask = 0;
+
+	for (mask = 1; mask != 0; mask <<= 1) {
+		if (*--f == code) {
+			*ins &= ~mask;
+			if (val & 1)
+				*ins |= mask;
+			if (ins_mask != NULL)
+				*ins_mask |= mask;
+			val >>= 1;
+		}
+	}
+}
+
+static uint32_t get_u32_2u16(const uint16_t *v)
+{
+	return v[0] | (v[1] << 16);
+}
+
+static void put_u32_2u16(uint16_t *v, uint32_t d)
+{
+	v[0] = d & 0xffff;
+	v[1] = (d >> 16) & 0xffff;
+}
+
 void vc4_fill_value(uint16_t *ins, uint16_t *ins_mask, const struct vc4_opcode *op,
 		    char code, uint32_t val)
 {
 	uint16_t mask;
 	const char *f;
 	size_t pi;
+	size_t i0, i1;
 
 	assert(op->length >= 1 && op->length <= 5);
 	assert(strlen(op->string) == 16 * op->length);
 	assert(code >= 'a' && code <= 'z');
 
-	if (op->vals[code - 'a'].length == 32) {
-		val = ((val >> 16) & 0xffff) | ((val & 0xffff) << 16);
+	if (strchr(op->string, code) == NULL) {
+		return;
+	}
+
+	/* first and last index of code in op->string */
+	i0 = strchr(op->string, code) - op->string;
+	i1 = strrchr(op->string, code) - op->string;
+
+	if (op->mode == VC4_INS_SCALAR48 && i0 >= 16 && i1 < 48) {
+		uint32_t iv, im, oi, t;
+
+		assert(op->length == 3);
+
+		fill_value_u32(&iv, &im, op->string + 48, code, val);
+
+		oi = get_u32_2u16(ins + 1);
+		oi &= ~im;
+		oi |= iv;
+		put_u32_2u16(ins + 1, oi);
+
+		if (ins_mask != NULL) {
+			t = get_u32_2u16(ins_mask + 1);
+			t |= im;
+			put_u32_2u16(ins_mask + 1, t);
+		}
+
+		return;
 	}
 
 	mask = 0x0000;

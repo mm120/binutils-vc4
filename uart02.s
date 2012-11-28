@@ -21,6 +21,8 @@ __start:
 	ld 	r0, (r1)
 	and 	r0, ~VC_GPIO_FSEL1_FSEL14__MASK
 	or 	r0, VC_GPIO_FSEL1_FSEL14_TXD0
+	and 	r0, ~VC_GPIO_FSEL1_FSEL15__MASK
+	or 	r0, VC_GPIO_FSEL1_FSEL15_RXD0
 	st 	r0, (r1)
 
 	poke	VC_GPIO_PUD, 0
@@ -32,7 +34,7 @@ delay1:
 	cmp 	r0, 150
 	bne 	delay1
 	
-	poke	VC_GPIO_PUDCLK0, 1 << 14
+	poke	VC_GPIO_PUDCLK0, (1 << 14) | (1 << 15)
 
 	mov 	r0, 0
 delay2:	
@@ -56,19 +58,47 @@ delay2:
 	poke	VC_AUX_MU_LCR_REG, 0x03
 	poke	VC_AUX_MU_CNTL_REG, 2
 	
-	mov 	r2, 0
-loop1:
+	mov 	r0, 0x12345678
+	bl	hexstring
+
+loop:
+	mov 	r1, VC_AUX_MU_LSR_REG
+	ld 	r1, (r1)
+	and 	r1, VC_AUX_MU_LSR_REG_RX_READY
+	cmp 	r1, VC_AUX_MU_LSR_REG_RX_READY
+	bne 	loop
+	
+	mov 	r1, VC_AUX_MU_IO_REG
+	ld	r0, (r1)
+	st	r0, (r1)
+	b	loop
+	
+hexstring:
+	mov	r3, 0
+	
+hexstring_loop:	
+	mov 	r1, r0
+	lsr 	r1, 28
+	and	r1, 0xf
+
+	ldb 	r2, digits(r1)
+	
+hexstring_putchar:	
 	mov 	r1, VC_AUX_MU_LSR_REG
 	ld 	r1, (r1)
 	and 	r1, VC_AUX_MU_LSR_REG_TX_EMPTY
 	cmp 	r1, VC_AUX_MU_LSR_REG_TX_EMPTY
-	bne 	loop1
+	bne 	hexstring_putchar
 	
-	or	r2, '0'
-
 	mov 	r1, VC_AUX_MU_IO_REG
-	st 	r2, (r1)
+	st	r2, (r1)
+
+	lsl 	r0, 4
+	add 	r3, 1
+	cmp 	r3, 8
+	bne	hexstring_loop
 	
-	add 	r2, 1
-	and 	r2, 7
-	b 	loop1
+	rts
+
+digits:	
+	.ascii	"0123456789abcdef"

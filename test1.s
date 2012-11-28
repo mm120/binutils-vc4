@@ -37,7 +37,7 @@ _start:
 	b	r9
 #	bcc	r10
 	push r6
-#	push lr	?
+	push lr
 	push r6, lr
 #	push r6, pc
 	pop r6, pc
@@ -156,4 +156,16 @@ putchar:
 	st 	r2, (r1)
 
 	rts
-	
+
+	scalar16 0
+	scalar16 0x7fff
+	scalar32_1 0, 0x1234
+	scalar32_1 0x3fff, 0x1234
+	scalar32_2 0, 0x1234
+	scalar32_2 0x1fff, 0x1234
+	scalar48 0, 0x12345678
+	scalar48 0x0fff, 0x12345678
+	vector48 0, 0x12345678
+	vector48 0x07ff, 0x12345678
+	vector80 0, 0x12345678, 0x9abcdef0
+	vector80 0x07ff, 0x12345678, 0x9abcdef0

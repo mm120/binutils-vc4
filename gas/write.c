@@ -30,6 +30,13 @@
 #include "libbfd.h"
 #include "compress-debug.h"
 
+#define DEBUG
+#define DEBUG1
+#define DEBUG2
+#define DEBUG3
+#define DEBUG4
+#define DEBUG5
+
 #ifndef TC_ADJUST_RELOC_COUNT
 #define TC_ADJUST_RELOC_COUNT(FIX, COUNT)
 #endif

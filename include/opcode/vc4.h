@@ -7,4 +7,8 @@
 #include "../../libvc4/vc4.h"
 #include "../../libvc4/eval.h"
 
+struct vc4_info *vc4_info;
+
+void vc4_load_opcode_info(void);
+
 #endif /* VC4_OPCODE_H__ */

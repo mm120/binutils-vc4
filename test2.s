@@ -4,10 +4,17 @@
 	.global delay3
 	.extern delay3
 delay3:
-	nop
-	nop
+	.fill 64,2,1
 	b	delay3
+	add	r0,r1,r2
+delay4:
+	.fill 65,2,1
+	b	delay4
+	add	r10,r11,r12
+	nop
 
+	.if 1
+	
 	mov	r9, cpuid
 	rti
 	halt
@@ -57,4 +64,6 @@ label:
 	st12	r0, 0x123(r0), 0
 	
 	ld	r7,BIG_NUM
+
+	.endif
 	

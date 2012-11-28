@@ -46,8 +46,11 @@ void decode(const struct vc4_info *info, uint32_t addr, const uint8_t *buf, size
 
 int main(int argc, char *argv[])
 {
-	struct vc4_info *info = vc4_read_arch_file(
-		"/home/marmar01/src/rpi/videocoreiv/videocoreiv.arch");
+	char *arch = getenv("VC4_ARCH");
+	if (arch == NULL)
+		arch = "/home/marmar01/src/rpi/videocoreiv/videocoreiv.arch";
+
+	struct vc4_info *info = vc4_read_arch_file(arch);
 
 	if (info == NULL) {
 		perror("Can't open videocoreiv.arch");
@@ -59,8 +62,11 @@ int main(int argc, char *argv[])
 	FILE *fp;
 	uint8_t buf[0x10000];
 	size_t len;
+	long off = 0;
 	char *name = "bootcode.bin";
 
+	if (argc > 2)
+		off = strtol(argv[2], NULL, 0);
 	if (argc > 1)
 		name = argv[1];
 	fp = fopen(name, "r");
@@ -69,9 +75,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if (off != 0)
+		fseek(fp, off, SEEK_SET);
+
 	len = fread(buf, 1, 0x10000, fp);
 
-	decode(info, 0, buf, len);
+	decode(info, off, buf, len);
 	
 	fclose(fp);
 

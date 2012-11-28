@@ -45,6 +45,30 @@ extern const char vc4_comment_chars [];
 /* Values passed to md_apply_fix don't include the symbol value.  */
 #define MD_APPLY_SYM_VALUE(FIX) 0
 
+struct vc4_param;
+struct vc4_asm;
+
+struct vc4_frag_type
+{
+  int pad;
+  int pc_rel;
+  int divide;
+  char num_code;
+  bfd_reloc_code_real_type bfd_fixup;
+  const struct vc4_param *param;
+  const struct vc4_asm *opcode;
+};
+
+typedef struct fix fixS;
+
+void vc4_init_frag(fragS *f);
+void vc4_init_fix(fixS *f);
+
+#define TC_FRAG_TYPE		struct vc4_frag_type
+#define TC_FRAG_INIT(fragp)	vc4_init_frag(fragp)
+#define TC_FIX_TYPE             int
+#define TC_INIT_FIX_DATA(fixp)  vc4_init_fix(fixp)
+
 #define md_apply_fix md_apply_fix
 
 extern bfd_boolean vc4_fix_adjustable (struct fix *);
@@ -61,7 +85,8 @@ extern long md_pcrel_from_section (struct fix *, segT);
    will point to the start of the expression.  */
 #define md_operand(x)
 
-#define md_relax_frag(segment, fragp, stretch) \
+
+#define md_relax_frag(segment, fragp, stretch)	\
   vc4_relax_frag (segment, fragp, stretch)
 extern int vc4_relax_frag(asection *, struct frag *, long);
 

@@ -5548,6 +5548,12 @@ giving a 16 bit signed byte offset.  */
 1110 0101 000d dddd oooo oooo oooo oooo oooo oooo oooo oooo  "; lea r%i<d>, 0x%08x<$+o> ;(pc)"  */
   BFD_RELOC_VC4_REL32,
 
+/* VideoCore IV 5-bit number (in uint16 1)
+
+o
+0000 010o oooo dddd  "; ld r%i<d>, 0x%02x<o*4>(sp)"  */
+  BFD_RELOC_VC4_IMM5_MUL4,
+
 /* VideoCore IV 5-bit number (in uint16 2)
 
 o

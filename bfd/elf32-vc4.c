@@ -28,6 +28,9 @@
 #include "libiberty.h"
 #include <assert.h>
 #include <ctype.h>
+//#include "opcode/vc4.h"
+
+static char *dump_uint16s(char *buf, const uint16_t *dat, size_t len);
 
 bfd_reloc_status_type
 vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
@@ -174,6 +177,21 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 TRUE),			/* pcrel_offset */
+
+  /* A absolute 5 bit relocation.  */
+  HOWTO (R_VC4_IMM5_MUL4,       /* type */
+	 2,			/* rightshift */
+	 2,			/* size (0 = byte, 1 = short, 2 = long) */
+	 5,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_signed, /* complain_on_overflow */
+	 vc4_elf_reloc,		/* special_function */
+	 "R_VC4_IMM5_MUL4",     /* name */
+	 FALSE,			/* partial_inplace */
+	 0x00000000,		/* src_mask */
+	 0xffffffff,		/* dst_mask */
+	 FALSE),		/* pcrel_offset */
 
   /* A absolute 5 bit relocation.  */
   HOWTO (R_VC4_IMM5_1,          /* type */
@@ -376,6 +394,7 @@ static const struct vc4_bfd_fixup_table bfd_fixup_table[] =
     { 'o', 1, 1, "1110 0111 ww0d dddd 1111 1ooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL27, R_VC4_PCREL27 }, /*  */
     { 'o', 1, 2, "1001 oooo 1ooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL27_MUL2, R_VC4_PCREL27_MUL2 }, /*  */
     { 'o', 1, 1, "1110 0101 000d dddd oooo oooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL32, R_VC4_PCREL32 }, /*  */
+    { 'o', 0, 4, "0000 010o oooo dddd", BFD_RELOC_VC4_IMM5_MUL4, R_VC4_IMM5_MUL4 }, /*  */
     { 'o', 0, 1, "0000 010o oooo dddd", BFD_RELOC_VC4_IMM5_1, R_VC4_IMM5_1 }, /*  */
     { 'u', 0, 1, "1010 0000 ww1d dddd aaaa accc c10u uuuu", BFD_RELOC_VC4_IMM5_2, R_VC4_IMM5_2 }, /*  */
     { ' ', 0, 1, "", BFD_RELOC_VC4_IMM6, R_VC4_IMM6 }, /*  */
@@ -469,13 +488,13 @@ static void vc4_poke_reloc_value(bfd *input_bfd, bfd_byte *contents, unsigned in
     case R_VC4_IMM27:
     case R_VC4_IMM32:
     case R_VC4_IMM32_2:
-      len = vc4_bfd_fixup_get_length(type);
-	  
+      len = bfd_fixup_table2[type].length;
+      assert(len >= 1 && len <= 5);
+
       for (i = 0; i < len; i++) {
 	ins[i] = bfd_get_16(input_bfd, contents + i * 2);
       }
 
-      printf("%x %x %x\n",ins[0],ins[1],ins[2]);
       vc4_bfd_fixup_set(bfd_fixup_table[type].bfd_reloc_val, ins, srel);
 
       for (i = 0; i < len; i++) {
@@ -503,6 +522,7 @@ vc4_final_link_relocate (reloc_howto_type *howto,
 {
   bfd_reloc_status_type r = bfd_reloc_ok;
   bfd_signed_vma srel;
+  bfd_signed_vma temp;
 
   switch (howto->type)
     {
@@ -551,6 +571,20 @@ vc4_final_link_relocate (reloc_howto_type *howto,
 	      srel >>= 1;
 	    }
 	}
+
+      temp = srel;
+
+      if (bfd_fixup_table[howto->type].code == '0') {
+	// signed
+	temp >>= howto->bitsize - 1;
+	if (temp != 0 && temp != -1)
+	  return bfd_reloc_outofrange;
+      } else {
+	// unsigned
+	temp >>= howto->bitsize;
+	if (temp != 0)
+	  return bfd_reloc_outofrange;
+      }
 
       vc4_poke_reloc_value(input_bfd, contents, howto->type, srel);
 
@@ -1109,6 +1143,8 @@ static void make_tab2(void)
     return;
   bfd_fixup_table_done = 1;
 
+  //vc4_load_opcode_info();
+
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
 
     assert(i == bfd_fixup_table[i].vc4_reloc_val);
@@ -1187,7 +1223,7 @@ static void make_tab2(void)
   }
 
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
-    printf("TAB %4d %2d %d %016llx%016llx %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %s\n",
+    printf("TAB %4d %2d %d %04llx%016llx %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %s\n",
 	   bfd_fixup_table[i].bfd_reloc_val, i,
 	   bfd_fixup_table2[i].length,
 	   bfd_fixup_table2[i].mask.hi,
@@ -1217,7 +1253,18 @@ bfd_reloc_code_real_type vc4_bfd_fixup_get(const char *str, char code, int pc_re
 
   make_tab2();
 
+  /*printf("G %llx %llx %d %d %d\n", mask.hi, mask.lo, width, pc_rel, divide);*/
+
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    /*
+    printf("> %llx %llx %d %d %d = %d\n",
+	   bfd_fixup_table2[i].mask.hi,
+	   bfd_fixup_table2[i].mask.lo,
+	   bfd_fixup_table2[i].width,
+	   bfd_fixup_table[i].pc_rel,
+	   bfd_fixup_table[i].divide,
+	   bfd_fixup_table[i].bfd_reloc_val);
+    */
     if (mask.hi == bfd_fixup_table2[i].mask.hi &&
 	mask.lo == bfd_fixup_table2[i].mask.lo &&
 	width == bfd_fixup_table2[i].width &&
