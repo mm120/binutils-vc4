@@ -637,21 +637,17 @@ static int match_op_info_to_vc4_asm_item(const struct vc4_param *param,
   return -1;
 }
 
-struct fixup_op_info {
-  int set;
-  int broken;
-  bfd_reloc_code_real_type bfd_fixup;
-  struct op_info op_inf;
-  const struct vc4_param *param;
-};
-
 struct match_ops
 {
   const struct vc4_asm *as;
   uint16_t ins[5];
   int ers[5];
   int score;
-  struct fixup_op_info fixup_info;
+  int set;
+  int broken;
+  bfd_reloc_code_real_type bfd_fixup;
+  struct op_info *op_inf;
+  const struct vc4_param *param;
 };
 
 static int match_comp(const void *va, const void *vb)
@@ -709,31 +705,6 @@ static int match_op_info_to_vc4_asm(struct match_ops *matches,
 
   qsort(matches, num, sizeof(matches[0]), match_comp);
 
-#if 0
-  for (j = 0; j < (size_t)num; j++) {
-
-    opcode = matches[j].as;
-
-    printf("-opcode = %-10s %-38s %s",
-	   opcode->str,
-	   opcode->op->format,
-	   opcode->op->string);
-
-    printf("  ");
-    for (i=0; i<opcode->pat.count; i++) {
-      printf(" (%c/%u)",
-	     opcode->pat.pat[i].code,
-	     opcode->pat.pat[i].val);
-    }
-    for (i=0; i<opcode->op->num_params; i++) {
-      printf(" %s = %d",
-	     vc4_param_print(&opcode->op->params[i], buf[0]),
-	     matches[j].ers[i]);
-    }
-    printf(" => %d\n", matches[j].score);
-  }
-#endif
-
   for (j = 0; j < (size_t)num; j++) {
     /* If we have a score of 0 it means that that entry in the table
        will definately work, we don't need any more entries. */
@@ -744,7 +715,7 @@ static int match_op_info_to_vc4_asm(struct match_ops *matches,
   }
 
   /* Now we go through the table, and if we have two entries that are
-     te same elngth, we look it see if it's worth getting rid of one
+     the same length, we look it see if it's worth getting rid of one
      of them. */
   if (num > 1)
     for (j = 0; j < (size_t)(num - 1); j++) {
@@ -882,7 +853,7 @@ static int vc4_param_fits(const struct vc4_param *param, signed long long *pval)
   return 1;
 }
 
-static void build_match(struct match_ops *match, const struct op_info *ops)
+static void build_match(struct match_ops *match, struct op_info *ops)
 {
   size_t i;
   const struct vc4_asm *opcode;
@@ -900,9 +871,11 @@ static void build_match(struct match_ops *match, const struct op_info *ops)
   match->ins[1] = opcode->ins[1];
   match->ins[2] = match->ins[3] = match->ins[4] = 0;
 
-  memset(&match->fixup_info, 0, sizeof(match->fixup_info));
-
-  match->fixup_info.set = 0;
+  match->set = 0;
+  match->broken = 0;
+  match->bfd_fixup = 0;
+  match->op_inf = NULL;
+  match->param = NULL;
 
   for (i=0; i<opcode->op->num_params; i++) {
 
@@ -966,45 +939,47 @@ static void build_match(struct match_ops *match, const struct op_info *ops)
 	val = ops[i].exp.X_add_number;
 
 	if (!vc4_param_fits(&opcode->op->params[i], &val))
-	  match->fixup_info.broken = 1;
+	  match->broken = 1;
 	
 	printf("ON: %lld %d %d\n",
 	       (long long)ops[i].exp.X_add_number,
 	       opcode->op->params[i].num_width,
-	       match->fixup_info.broken);
+	       match->broken);
 
 	fill_value(match->ins, opcode->op, opcode->op->params[i].num_code, (uint32_t)val);
 
       } else {
 
-	if (match->fixup_info.set)
-	  as_bad("Can't have more than one varaible part of an instruction");
+	if (match->set) {
+	  as_bad("Can't have more than one variable part of an instruction");
+	  match->broken = 1;
+	}
 
 	printf("Set %s\n", dump_op_info(&ops[i], buf));
 	
-	match->fixup_info.set = 1;
-	match->fixup_info.op_inf = ops[i];
-	match->fixup_info.param = &opcode->op->params[i];
+	match->set = 1;
+	match->op_inf = &ops[i];
+	match->param = &opcode->op->params[i];
       }
     }
   }
 
-  if (!match->fixup_info.broken && match->fixup_info.set) {
+  if (!match->broken && match->set) {
 
-    match->fixup_info.bfd_fixup = vc4_bfd_fixup_get(opcode->op->string,
-				  match->fixup_info.param->num_code,
-				  vc4_param_pc_rel(match->fixup_info.param->type),
-				  vc4_param_divide(match->fixup_info.param->type));
+    match->bfd_fixup = vc4_bfd_fixup_get(opcode->op->string,
+				  match->param->num_code,
+				  vc4_param_pc_rel(match->param->type),
+				  vc4_param_divide(match->param->type));
 
-    if (match->fixup_info.bfd_fixup == 0) {
+    if (match->bfd_fixup == 0) {
       as_bad("%s: Can't find bfd fixup type! %d %s  %s %c %d %d\n", __func__,
-	     match->fixup_info.param->num_width,
-	     dump_op_info(&match->fixup_info.op_inf, buf),
+	     match->param->num_width,
+	     dump_op_info(match->op_inf, buf),
 	     opcode->op->string,
-	     match->fixup_info.param->num_code,
-	     vc4_param_pc_rel(match->fixup_info.param->type),
-	     vc4_param_divide(match->fixup_info.param->type));
-      match->fixup_info.broken = 1;
+	     match->param->num_code,
+	     vc4_param_pc_rel(match->param->type),
+	     vc4_param_divide(match->param->type));
+      match->broken = 1;
     }
   }
 }
@@ -1019,9 +994,7 @@ md_assemble (char * str)
   char *t;
   struct op_info ops[5];
   int count;
-  /*uint16_t ins[5];*/
   char buf[256];
-  /*struct fixup_op_info fixup_info;*/
   struct match_ops matches[5];
   size_t num_matches;
   size_t match_index;
@@ -1058,7 +1031,6 @@ md_assemble (char * str)
   input_line_pointer = t;
 
   num_matches = match_op_info_to_vc4_asm(matches, count, ops, list);
-  match_index = 0;
 
   if (num_matches == 0) {
     as_bad(_("can't match operands to opcode"));
@@ -1070,7 +1042,7 @@ md_assemble (char * str)
   }
 
   for (match_index = 0; match_index < num_matches; ) {
-    if (matches[match_index].fixup_info.broken) {
+    if (matches[match_index].broken) {
       printf("X %d %d\n", match_index, num_matches);
       memmove(&matches[match_index], &matches[match_index+1], sizeof(matches[0]) * (num_matches - match_index));
       num_matches--;
@@ -1093,78 +1065,84 @@ md_assemble (char * str)
 
   opcode = matches[0].as;
 
-  if (num_matches > 1 && matches[0].fixup_info.set) {
+  if (num_matches > 1 && matches[0].set) {
 
     printf("frag_var: %d %p\n", opcode->op->length, frag_now);
 
     frag_now->tc_frag_data.num = num_matches;
     frag_now->tc_frag_data.cur = 0;
+    frag_now->tc_frag_data.op_inf = *matches[0].op_inf;
+
     for (i=0; i<num_matches; i++) {
       frag_now->tc_frag_data.d[i].as = matches[i].as;
-      frag_now->tc_frag_data.d[i].param = matches[i].fixup_info.param;
+      frag_now->tc_frag_data.d[i].param = matches[i].param;
       memcpy(&frag_now->tc_frag_data.d[i].ins, matches[i].ins, sizeof(uint16_t) * 5);
-      frag_now->tc_frag_data.d[i].bfd_fixup = matches[i].fixup_info.bfd_fixup;
-      frag_now->tc_frag_data.d[i].broken = 0;
-      frag_now->tc_frag_data.d[i].op_inf = matches[i].fixup_info.op_inf;
+      frag_now->tc_frag_data.d[i].bfd_fixup = matches[i].bfd_fixup;
+    }
+
+    for (i=1; i<num_matches; i++) {
+      if (matches[0].op_inf != matches[i].op_inf) {
+	as_fatal("To options don't have the same op_info??");
+      }
     }
 
     frag = frag_var(rs_machine_dependent, 10,
 		    frag_now->tc_frag_data.d[0].as->op->length * 2,
 		    99,
-		    frag_now->tc_frag_data.d[0].op_inf.exp.X_add_symbol,
-		    frag_now->tc_frag_data.d[0].op_inf.exp.X_add_number,
+		    frag_now->tc_frag_data.op_inf.exp.X_add_symbol,
+		    frag_now->tc_frag_data.op_inf.exp.X_add_number,
 		    (char *)opcode); /* fr_opcode */
 
     printf("%s: frag_var %s %d %d/%d %d %d %llx%llx %s\n", __func__,
-	   vc4_param_pc_rel(matches[0].fixup_info.param->type) ? "pc-rel" : "imm",
-	   matches[0].fixup_info.bfd_fixup,
-	   matches[0].fixup_info.param->num_width,
-	   vc4_bfd_fixup_get_width(matches[0].fixup_info.bfd_fixup),
-	   vc4_bfd_fixup_get_length(matches[0].fixup_info.bfd_fixup),
-	   vc4_bfd_fixup_get_divide(matches[0].fixup_info.bfd_fixup),
-	   vc4_bfd_fixup_get_mask(matches[0].fixup_info.bfd_fixup).hi,
-	   vc4_bfd_fixup_get_mask(matches[0].fixup_info.bfd_fixup).lo,
-	   dump_op_info(&matches[0].fixup_info.op_inf, buf));
+	   vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
+	   matches[0].bfd_fixup,
+	   matches[0].param->num_width,
+	   vc4_bfd_fixup_get_width(matches[0].bfd_fixup),
+	   vc4_bfd_fixup_get_length(matches[0].bfd_fixup),
+	   vc4_bfd_fixup_get_divide(matches[0].bfd_fixup),
+	   vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).hi,
+	   vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).lo,
+	   dump_op_info(matches[0].op_inf, buf));
 
   } else {
 
     frag = frag_more(opcode->op->length * 2);
 
-    if (matches[0].fixup_info.set) {
+    if (matches[0].set) {
 
       int where = frag - frag_now->fr_literal;
 
-      if (matches[0].fixup_info.op_inf.exp.X_op == O_symbol) {
+      if (matches[0].op_inf->exp.X_op == O_symbol) {
 
 	printf("%s: fix_new_exp %s %d %d/%d %d %d %llx%llx %s\n", __func__,
-	       vc4_param_pc_rel(matches[0].fixup_info.param->type) ? "pc-rel" : "imm",
-	       matches[0].fixup_info.bfd_fixup,
-	       matches[0].fixup_info.param->num_width,
-	       vc4_bfd_fixup_get_width(matches[0].fixup_info.bfd_fixup),
-	       vc4_bfd_fixup_get_length(matches[0].fixup_info.bfd_fixup),
-	       vc4_bfd_fixup_get_divide(matches[0].fixup_info.bfd_fixup),
-	       vc4_bfd_fixup_get_mask(matches[0].fixup_info.bfd_fixup).hi,
-	       vc4_bfd_fixup_get_mask(matches[0].fixup_info.bfd_fixup).lo,
-	       dump_op_info(&matches[0].fixup_info.op_inf, buf));
+	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
+	       matches[0].bfd_fixup,
+	       matches[0].param->num_width,
+	       vc4_bfd_fixup_get_width(matches[0].bfd_fixup),
+	       vc4_bfd_fixup_get_length(matches[0].bfd_fixup),
+	       vc4_bfd_fixup_get_divide(matches[0].bfd_fixup),
+	       vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).hi,
+	       vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).lo,
+	       dump_op_info(matches[0].op_inf, buf));
 	
 	fix_new_exp(frag_now, where,
 		    opcode->op->length * 2,
-		    &matches[0].fixup_info.op_inf.exp,
-		    vc4_param_pc_rel(matches[0].fixup_info.param->type),
-		    matches[0].fixup_info.bfd_fixup);
+		    &matches[0].op_inf->exp,
+		    vc4_param_pc_rel(matches[0].param->type),
+		    matches[0].bfd_fixup);
       } else {
 	/*as_fatal("Didn't think this could happen?");*/
 
 	printf("%s: fixup_odd %s %d %d/%d %d %d %llx%llx %s\n", __func__,
-	       vc4_param_pc_rel(matches[0].fixup_info.param->type) ? "pc-rel" : "imm",
-	       matches[0].fixup_info.bfd_fixup,
-	       matches[0].fixup_info.param->num_width,
-	       vc4_bfd_fixup_get_width(matches[0].fixup_info.bfd_fixup),
-	       vc4_bfd_fixup_get_length(matches[0].fixup_info.bfd_fixup),
-	       vc4_bfd_fixup_get_divide(matches[0].fixup_info.bfd_fixup),
-	       vc4_bfd_fixup_get_mask(matches[0].fixup_info.bfd_fixup).hi,
-	       vc4_bfd_fixup_get_mask(matches[0].fixup_info.bfd_fixup).lo,
-	       dump_op_info(&matches[0].fixup_info.op_inf, buf));
+	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
+	       matches[0].bfd_fixup,
+	       matches[0].param->num_width,
+	       vc4_bfd_fixup_get_width(matches[0].bfd_fixup),
+	       vc4_bfd_fixup_get_length(matches[0].bfd_fixup),
+	       vc4_bfd_fixup_get_divide(matches[0].bfd_fixup),
+	       vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).hi,
+	       vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).lo,
+	       dump_op_info(matches[0].op_inf, buf));
       }
     }
   }
@@ -1194,18 +1172,57 @@ md_undefined_symbol (char * name ATTRIBUTE_UNUSED)
 
 /* Interface to relax_segment.  */
 
-int vc4_relax_frag(asection *s, struct frag *f, long l)
+int vc4_relax_frag(asection *s, struct frag *fragP, long l)
 {
-  const struct vc4_asm *as = (const struct vc4_asm *)f->fr_opcode;
+  const struct vc4_asm *as = (const struct vc4_asm *)fragP->fr_opcode;
   /*char buf[256];*/
 
-  printf("%s: %p %p %lx | ", __func__, s, f, l);
+  printf("%s: %p %p %lx | ", __func__, s, fragP, l);
   printf("%x %x  %d %d %d  %s  <%s>\n",
-	 (unsigned int)f->fr_address, (unsigned int)f->last_fr_address,
-	 (int)f->fr_fix, (int)f->fr_var, (int)f->fr_offset,
-	 get_name(f->fr_symbol), as->str);
+	 (unsigned int)fragP->fr_address, (unsigned int)fragP->last_fr_address,
+	 (int)fragP->fr_fix, (int)fragP->fr_var, (int)fragP->fr_offset,
+	 get_name(fragP->fr_symbol), as->str);
 
-  return 0;
+  struct vc4_frag_option *fo;
+  signed long long val;
+  int oldsize;
+  int newsize;
+
+  oldsize = fragP->fr_var;
+
+  if (S_IS_DEFINED(fragP->fr_symbol)) {
+
+    for (;;) {
+      fo = &fragP->tc_frag_data.d[fragP->tc_frag_data.cur];
+
+      val = S_GET_VALUE(fragP->fr_symbol);
+      val += fragP->fr_offset;
+      if (vc4_param_pc_rel(fo->param->type))
+	val -= fragP->fr_address;
+
+      if (vc4_param_fits(fo->param, &val))
+	break;
+
+      if ((fragP->tc_frag_data.cur + 1) >= fragP->tc_frag_data.num) {
+	as_bad("Cant find an option that fits!");
+	break;
+      }
+
+      fragP->tc_frag_data.cur++;
+    }
+
+  } else {
+
+    /* Assume the worst */
+    fragP->tc_frag_data.cur = fragP->tc_frag_data.num - 1;
+
+    fo = &fragP->tc_frag_data.d[fragP->tc_frag_data.cur];
+  }
+  newsize = fo->as->op->length * 2;
+
+  fragP->fr_var = newsize;
+
+  return newsize - oldsize;
 }
 
 
@@ -1223,34 +1240,48 @@ int vc4_relax_frag(asection *s, struct frag *f, long l)
 int
 md_estimate_size_before_relax (fragS * fragP, segT segment)
 {
-  signed long long val = S_GET_VALUE(fragP->fr_symbol);
   struct vc4_frag_option *fo;
-  int broken;
+  signed long long val;
 
-  for (;;) {
-    fo = &fragP->tc_frag_data.d[fragP->tc_frag_data.cur];
+  fragP->tc_frag_data.cur = 0;
 
-    fragP->fr_var = fo->as->op->length * 2;
+  if (S_IS_DEFINED(fragP->fr_symbol)) {
 
-    if (vc4_param_pc_rel(fo->param->type))
-      val -= fragP->fr_address;
+    for (;;) {
+      fo = &fragP->tc_frag_data.d[fragP->tc_frag_data.cur];
 
-    broken = !vc4_param_fits(fo->param, &val);
+      val = S_GET_VALUE(fragP->fr_symbol);
+      val += fragP->fr_offset;
+      if (vc4_param_pc_rel(fo->param->type))
+	val -= fragP->fr_address;
 
-    if (!broken)
-      break;
-    if ((fragP->tc_frag_data.cur + 1) >= fragP->tc_frag_data.num) {
-      as_bad("Cant find an option that fits!");
-      break;
+      if (vc4_param_fits(fo->param, &val))
+	break;
+
+      if ((fragP->tc_frag_data.cur + 1) >= fragP->tc_frag_data.num) {
+	as_bad("Cant find an option that fits!");
+	break;
+      }
+
+      fragP->tc_frag_data.cur++;
     }
-    fragP->tc_frag_data.cur++;
+
+  } else {
+
+    /* Assume the worst */
+    fragP->tc_frag_data.cur = fragP->tc_frag_data.num - 1;
+
+    fo = &fragP->tc_frag_data.d[fragP->tc_frag_data.cur];
   }
 
+  fragP->fr_var = fo->as->op->length * 2;
+ 
   printf("%s: %p %lx %lld = %d\n", __func__, fragP, (long)segment, val, (int)fragP->fr_var);
 
   return fragP->fr_var;
 }
 
+#if 0
 void vc4_init_fix(fixS *f)
 {
   printf("%s: %p %p:%s %p:%s  %d\n", __func__,
@@ -1263,6 +1294,7 @@ void vc4_init_frag(fragS *f)
 {
   printf("%s: %p \n", __func__, f);
 }
+#endif
 
 /* *fragP has been relaxed to its final size, and now needs to have
    the bytes inside it modified to conform to the new size.
@@ -1276,7 +1308,6 @@ md_convert_frag (bfd *   abfd ATTRIBUTE_UNUSED,
 		 segT    sec  ATTRIBUTE_UNUSED,
 		 fragS * fragP ATTRIBUTE_UNUSED)
 {
-  /* FIXME */
   /* 'buf' points to the start of the instruction, whether
      we need to change the instruction's fixed encoding.  */
   char *buf = fragP->fr_literal + fragP->fr_fix;

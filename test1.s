@@ -37,7 +37,9 @@ _start:
 	b	r9
 #	bcc	r10
 	push r6
+	push r5
 	push lr
+	pop r7
 	push r6, lr
 #	push r6, pc
 	pop r6, pc

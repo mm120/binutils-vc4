@@ -80,26 +80,25 @@ struct vc4_frag_option
   const struct vc4_param *param;
   uint16_t ins[5];
   bfd_reloc_code_real_type bfd_fixup;
-  int broken;
-  struct op_info op_inf;
 };
 
 struct vc4_frag_type
 {
   size_t num;
   size_t cur;
+  struct op_info op_inf;
   struct vc4_frag_option d[3];
 };
 
 typedef struct fix fixS;
 
-void vc4_init_frag(fragS *f);
-void vc4_init_fix(fixS *f);
+/*void vc4_init_frag(fragS *f);*/
+/*void vc4_init_fix(fixS *f);*/
 
 #define TC_FRAG_TYPE		struct vc4_frag_type
-#define TC_FRAG_INIT(fragp)	vc4_init_frag(fragp)
-#define TC_FIX_TYPE             int
-#define TC_INIT_FIX_DATA(fixp)  vc4_init_fix(fixp)
+/*#define TC_FRAG_INIT(fragp)	vc4_init_frag(fragp)*/
+/*#define TC_FIX_TYPE             int*/
+/*#define TC_INIT_FIX_DATA(fixp)  vc4_init_fix(fixp)*/
 
 #define md_apply_fix md_apply_fix
 
