@@ -1377,9 +1377,13 @@ void vc4_bfd_fixup_set(bfd_reloc_code_real_type bfd_fixup, uint16_t *ins, long v
     uint16_t iw = bfd_fixup_table2[i].fix[j].ins_word;
     uint16_t im = bfd_fixup_table2[i].fix[j].ins_mask;
     int16_t vs = bfd_fixup_table2[i].fix[j].val_shift;
-
+    long vt = val;
+    if (vs < 0)
+      vt <<= (uint16_t)(-vs);
+    else if (vs > 0)
+      vt >>= (uint16_t)( vs);
     ins[iw] &= im ^ 0xFFFF;
-    ins[iw] |= im & ((vs < 0) ? (val >> -vs) : (val << vs));
+    ins[iw] |= im & vt;
   }
 
   printf("%s: %s done\n", __func__, dump_uint16s(buf, ins, len));

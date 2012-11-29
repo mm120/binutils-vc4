@@ -13,7 +13,7 @@ delay4:
 	add	r10,r11,r12
 	nop
 
-	.if 1
+	.if 0
 	
 	mov	r9, cpuid
 	rti

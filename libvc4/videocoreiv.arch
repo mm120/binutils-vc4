@@ -81,9 +81,9 @@
 0000 0000 0001 xxxx                                               "; unk4 0x%02x{x}"
 0000 0000 001x xxxx                                               "; unk5 0x%02x{x}"
 
-0000 0000 0101 1010                                               "; rts"     #otherwise known as 'b lr'
-0000 0000 010 d:5                                                 "; b r%i{d}"
-0000 0000 011 d:5                                                 "; bl r%i{d}"
+0000 0000 010 11010                                               "; rts"     #otherwise known as 'b lr'
+0000 0000 010  d:5                                                "; b r%i{d}"
+0000 0000 011  d:5                                                "; bl r%i{d}"
 
 # Table/Switch instructions
 # branch using indirect byte displacement  b *(pc+rd)
@@ -124,7 +124,7 @@
 0000 1ww1 s:4 d:4                                               "; st%s{w} r%i{d}, (r%i{s})"
  
 0001 0 o:6 11001                                                 "; add sp, #0x%x{o*4}"
-0001 0 o:6 d:5                                                    "; lea r%i{d}, 0x%x{o*4}(sp)"
+0001 0 o:6  d:5                                                  "; lea r%i{d}, 0x%x{o*4}(sp)"
  
 0001 1 c:4 o:7                                                    "; b%s{c} 0x%08x{$+o*2}"
 
@@ -267,7 +267,7 @@
 1110 0100 s:4 d:4 u:32       "; op4 r%i{d}, r%i{s}, 0x%08x{u}"
 
 1110 0101 000 d:5 o:32       "; lea r%i{d}, 0x%08x{$+o} ;(pc)"
-1110 0101 xxx d:5 o:32       "; lea r%i{d}, 0x%08x{$+o} ;(pc) ; %x{x}?"     
+1110 0101 xxx d:5 o:32       "; lea_x %x{x}, r%i{d}, 0x%08x{$+o} ;(pc)"
 
 1110 0110 ww 0 d:5  s:5  o:27       "; ld%s{w} r%i{d}, 0x%08x{o}(r%i{s})"
 1110 0110 ww 1 d:5  s:5  o:27       "; st%s{w} r%i{d}, 0x%08x{o}(r%i{s})"
@@ -300,7 +300,7 @@
 11110 x:11 y:32         "; vector48 0x%x{x}, 0x%x{y}"
 1110  x:12 y:32         "; scalar48 0x%x{x}, 0x%x{y}"
 110   x:13 y:16         "; scalar32 0x%x{x}, 0x%x{y}"
-10    x:14 y:16         "; scalar32 0x%x{x}, 0x%x{y}"
 110   x:13 y:16         "; scalar32_2 0x%x{x}, 0x%x{y}"
+10    x:14 y:16         "; scalar32 0x%x{x}, 0x%x{y}"
 10    x:14 y:16         "; scalar32_1 0x%x{x}, 0x%x{y}"
 0     x:15              "; scalar16 0x%x{x}"

@@ -18,6 +18,8 @@
    the Free Software Foundation, 51 Franklin Street - Fifth Floor,
    Boston, MA 02110-1301, USA.  */
 
+#include <inttypes.h>
+
 #define TC_VC4
 
 #define LISTING_HEADER "Vc4 GAS "
@@ -48,15 +50,45 @@ extern const char vc4_comment_chars [];
 struct vc4_param;
 struct vc4_asm;
 
+enum op_type
+  {
+    ot_unknown,
+    ot_cpuid,
+    ot_reg,
+    ot_reg_range,
+    ot_reg_addr,
+    ot_reg_addr_pi,
+    ot_reg_addr_pd,
+    ot_reg_addr_offset,
+    ot_2reg_addr_begin,
+    ot_2reg_addr_end,
+    ot_num,
+    ot_reg_shl,
+    ot_reg_lsr
+  };
+
+struct op_info
+{
+  enum op_type type;
+  expressionS exp;
+  int reg, num2;
+};
+
+struct vc4_frag_option
+{
+  const struct vc4_asm *as;
+  const struct vc4_param *param;
+  uint16_t ins[5];
+  bfd_reloc_code_real_type bfd_fixup;
+  int broken;
+  struct op_info op_inf;
+};
+
 struct vc4_frag_type
 {
-  int pad;
-  int pc_rel;
-  int divide;
-  char num_code;
-  bfd_reloc_code_real_type bfd_fixup;
-  const struct vc4_param *param;
-  const struct vc4_asm *opcode;
+  size_t num;
+  size_t cur;
+  struct vc4_frag_option d[3];
 };
 
 typedef struct fix fixS;
