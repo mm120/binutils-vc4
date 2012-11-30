@@ -372,13 +372,13 @@ struct vc4_bfd_mask
 
 struct vc4_bfd_fixup_table
 {
-  char code;
-  int is_s48;
-  int pc_rel;
-  int divide;
-  const char *str;
-  bfd_reloc_code_real_type bfd_reloc_val;
-  unsigned int vc4_reloc_val;
+  const char code;
+  const int is_s48;
+  const int pc_rel;
+  const int divide;
+  const char *const str;
+  const bfd_reloc_code_real_type bfd_reloc_val;
+  const unsigned int vc4_reloc_val;
 
   struct vc4_bfd_mask m;
 
