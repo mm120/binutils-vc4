@@ -3,6 +3,20 @@
 
 #include <inttypes.h>
 
+extern unsigned int debug_ctrl;
+
+#define DEBUG_CTRL_BASIC    0x00001
+#define DEBUG_CTRL_OPS      0x00002
+#define DEBUG_CTRL_MATCH    0x00004
+#define DEBUG_CTRL_FILL     0x00008
+#define DEBUG_CTRL_FRAG     0x00010
+#define DEBUG_CTRL_FIX      0x00020
+#define DEBUG_CTRL_RELOC    0x00040
+#define DEBUG_CTRL_TABLE    0x00080
+
+#define DEBUG(t, f...)  do { if (debug_ctrl & DEBUG_CTRL_ ## t) printf(f); } while (0)
+#define DEBUGn(t, f...) do { if (debug_ctrl & DEBUG_CTRL_ ## t) { printf("%s: ", __func__); printf(f); } } while (0)
+
 uint16_t get_le16(const uint8_t *b);
 
 enum vc4_ins_mode

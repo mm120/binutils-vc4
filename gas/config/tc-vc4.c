@@ -505,7 +505,7 @@ vc4_operands (char **line, struct op_info *ops)
     if (str == NULL) {
       return -1;
     }
-    printf("OP%d = %s\n", i+1, dump_op_info(&ops[i], buf));
+    DEBUG(OPS, "OP%d = %s\n", i+1, dump_op_info(&ops[i], buf));
     if (*str == 0) {
       *line = str;
       return i + 1;
@@ -765,23 +765,23 @@ static int match_op_info_to_vc4_asm(struct match_ops *matches,
 
       opcode = matches[j].as;
 
-      printf("+opcode = %-10s %-38s %s",
+      DEBUG(MATCH, "+opcode = %-10s %-38s %s",
 	     opcode->str,
 	     opcode->op->format,
 	     opcode->op->string);
 
-      printf("  ");
+      DEBUG(MATCH, "  ");
       for (i=0; i<opcode->pat.count; i++) {
-	printf(" (%c/%u)",
-	       opcode->pat.pat[i].code,
-	       opcode->pat.pat[i].val);
+	DEBUG(MATCH, " (%c/%u)",
+	      opcode->pat.pat[i].code,
+	      opcode->pat.pat[i].val);
       }
       for (i=0; i<opcode->op->num_params; i++) {
-	printf(" %s = %d",
-	       vc4_param_print(&opcode->op->params[i], buf[0]),
-	       matches[j].ers[i]);
+	DEBUG(MATCH, " %s = %d",
+	      vc4_param_print(&opcode->op->params[i], buf[0]),
+	      matches[j].ers[i]);
       }
-      printf(" => %d\n", matches[j].score);
+      DEBUG(MATCH, " => %d\n", matches[j].score);
     }
 
   return num;
@@ -790,8 +790,8 @@ static int match_op_info_to_vc4_asm(struct match_ops *matches,
 static void fill_value(uint16_t *ins, const struct vc4_opcode *op,
 		       char code, uint32_t val)
 {
-  printf("Fill %s %c %u %d\n", op->string,
-	 code, val, op->vals[code - 'a'].length);
+  DEBUG(FILL, "Fill %s %c %u %d\n", op->string,
+	code, val, op->vals[code - 'a'].length);
 
   vc4_fill_value(ins, NULL, op, code, val);
 }
@@ -863,9 +863,9 @@ static void build_match(struct match_ops *match, struct op_info *ops)
 
   assert(opcode != NULL);
 
-  printf(">opcode = %-10s %s (%s) %s\n",
-	 opcode->str, opcode->op->format,
-	 opcode->op->string, dump_asm_name(opcode, buf));
+  DEBUG(MATCH, ">opcode = %-10s %s (%s) %s\n",
+	opcode->str, opcode->op->format,
+	opcode->op->string, dump_asm_name(opcode, buf));
 
   match->ins[0] = opcode->ins[0];
   match->ins[1] = opcode->ins[1];
@@ -941,10 +941,10 @@ static void build_match(struct match_ops *match, struct op_info *ops)
 	if (!vc4_param_fits(&opcode->op->params[i], &val))
 	  match->broken = 1;
 	
-	printf("ON: %lld %d %d\n",
-	       (long long)ops[i].exp.X_add_number,
-	       opcode->op->params[i].num_width,
-	       match->broken);
+	DEBUG(OPS, "ON: %lld %d %d\n",
+	      (long long)ops[i].exp.X_add_number,
+	      opcode->op->params[i].num_width,
+	      match->broken);
 
 	fill_value(match->ins, opcode->op, opcode->op->params[i].num_code, (uint32_t)val);
 
@@ -955,8 +955,6 @@ static void build_match(struct match_ops *match, struct op_info *ops)
 	  match->broken = 1;
 	}
 
-	printf("Set %s\n", dump_op_info(&ops[i], buf));
-	
 	match->set = 1;
 	match->op_inf = &ops[i];
 	match->param = &opcode->op->params[i];
@@ -999,7 +997,7 @@ md_assemble (char * str)
   size_t num_matches;
   size_t match_index;
 
-  printf("A %s\n", str);
+  DEBUG(BASIC, "A %s\n", str);
 
   str = skip_space(extract_word(str, op, sizeof(op)));
 
@@ -1043,7 +1041,7 @@ md_assemble (char * str)
 
   for (match_index = 0; match_index < num_matches; ) {
     if (matches[match_index].broken) {
-      printf("X %d %d\n", match_index, num_matches);
+      DEBUG(MATCH, "X %d %d\n", match_index, num_matches);
       memmove(&matches[match_index], &matches[match_index+1], sizeof(matches[0]) * (num_matches - match_index));
       num_matches--;
     } else {
@@ -1067,7 +1065,7 @@ md_assemble (char * str)
 
   if (num_matches > 1 && matches[0].set) {
 
-    printf("frag_var: %d %p\n", opcode->op->length, frag_now);
+    DEBUG(FRAG, "frag_var: %d %p\n", opcode->op->length, frag_now);
 
     frag_now->tc_frag_data.num = num_matches;
     frag_now->tc_frag_data.cur = 0;
@@ -1093,7 +1091,7 @@ md_assemble (char * str)
 		    frag_now->tc_frag_data.op_inf.exp.X_add_number,
 		    (char *)opcode); /* fr_opcode */
 
-    printf("%s: frag_var %s %d %d/%d %d %d %llx%llx %s\n", __func__,
+    DEBUGn(FRAG, "frag_var %s %d %d/%d %d %d %llx%llx %s\n",
 	   vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
 	   matches[0].bfd_fixup,
 	   matches[0].param->num_width,
@@ -1114,7 +1112,7 @@ md_assemble (char * str)
 
       if (matches[0].op_inf->exp.X_op == O_symbol) {
 
-	printf("%s: fix_new_exp %s %d %d/%d %d %d %llx%llx %s\n", __func__,
+	DEBUGn(FIX, "fix_new_exp %s %d %d/%d %d %d %llx%llx %s\n",
 	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
 	       matches[0].bfd_fixup,
 	       matches[0].param->num_width,
@@ -1133,7 +1131,7 @@ md_assemble (char * str)
       } else {
 	/*as_fatal("Didn't think this could happen?");*/
 
-	printf("%s: fixup_odd %s %d %d/%d %d %d %llx%llx %s\n", __func__,
+	DEBUGn(FIX, "fixup_odd %s %d %d/%d %d %d %llx%llx %s\n",
 	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
 	       matches[0].bfd_fixup,
 	       matches[0].param->num_width,
@@ -1153,7 +1151,7 @@ md_assemble (char * str)
     bfd_putl16 ((bfd_vma)matches[0].ins[i], frag + i * 2);
   }
 
-  printf("%s\n", dump_uint16s(buf, matches[0].ins, opcode->op->length));
+  DEBUG(BASIC, "%s\n", dump_uint16s(buf, matches[0].ins, opcode->op->length));
 }
 
 valueT
@@ -1177,8 +1175,7 @@ int vc4_relax_frag(asection *s, struct frag *fragP, long l)
   const struct vc4_asm *as = (const struct vc4_asm *)fragP->fr_opcode;
   /*char buf[256];*/
 
-  printf("%s: %p %p %lx | ", __func__, s, fragP, l);
-  printf("%x %x  %d %d %d  %s  <%s>\n",
+  DEBUGn(FRAG, "%p %p %lx | %x %x  %d %d %d  %s  <%s>\n", s, fragP, l,
 	 (unsigned int)fragP->fr_address, (unsigned int)fragP->last_fr_address,
 	 (int)fragP->fr_fix, (int)fragP->fr_var, (int)fragP->fr_offset,
 	 get_name(fragP->fr_symbol), as->str);
@@ -1276,15 +1273,14 @@ md_estimate_size_before_relax (fragS * fragP, segT segment)
 
   fragP->fr_var = fo->as->op->length * 2;
  
-  printf("%s: %p %lx %lld = %d\n", __func__, fragP, (long)segment, val, (int)fragP->fr_var);
+  DEBUGn(FRAG, "%p %lx %lld = %d\n", fragP, (long)segment, val, (int)fragP->fr_var);
 
   return fragP->fr_var;
 }
 
-#if 0
 void vc4_init_fix(fixS *f)
 {
-  printf("%s: %p %p:%s %p:%s  %d\n", __func__,
+  DEBUGn(FIX, "%p %p:%s %p:%s  %d\n",
 	 f,
 	 f->fx_addsy, get_name(f->fx_addsy),
 	 f->fx_subsy, get_name(f->fx_subsy), f->fx_r_type);
@@ -1292,9 +1288,8 @@ void vc4_init_fix(fixS *f)
 
 void vc4_init_frag(fragS *f)
 {
-  printf("%s: %p \n", __func__, f);
+  DEBUGn(FRAG, "%p \n", f);
 }
-#endif
 
 /* *fragP has been relaxed to its final size, and now needs to have
    the bytes inside it modified to conform to the new size.
@@ -1314,7 +1309,7 @@ md_convert_frag (bfd *   abfd ATTRIBUTE_UNUSED,
   struct vc4_frag_option *fo = &fragP->tc_frag_data.d[fragP->tc_frag_data.cur];
   size_t i;
 
-  printf("%s: frag %p bfd_type %d index %d/%d\n", __func__, fragP,
+  DEBUGn(FRAG, "frag %p bfd_type %d index %d/%d\n", fragP,
 	 fo->bfd_fixup,
 	 fragP->tc_frag_data.cur,
 	 fragP->tc_frag_data.num);
@@ -1331,7 +1326,7 @@ md_convert_frag (bfd *   abfd ATTRIBUTE_UNUSED,
 
   buf = fragP->fr_literal + fragP->fr_fix;
 
-  printf("%s: %p\n", __func__, f);
+  DEBUGn(FRAG, "%p\n", f);
 
   for (i=0; i<fo->as->op->length; i++) {
     bfd_putl16 ((bfd_vma)fo->ins[i], buf + i * 2);
@@ -1404,7 +1399,7 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 {
   gas_assert (fixP->fx_r_type <= BFD_RELOC_UNUSED);
 
-  printf("md_apply_fix %d %s 0x%lx %p %p %d\n",
+  DEBUGn(FIX, "%d %s 0x%lx %p %p %d\n",
 	 fixP->fx_r_type, ""/*bfd_reloc_code_real_names[fixP->fx_r_type]*/,
 	 fixP->fx_where,
 	 fixP->fx_addsy, fixP->fx_subsy, fixP->fx_pcrel);
@@ -1538,7 +1533,7 @@ vc4_tc_gen_reloc (asection *seg ATTRIBUTE_UNUSED,
 {
   arelent *reloc;
 
-  printf("%s: %p %p:%s %p:%s\n", __func__,
+  DEBUGn(FIX, "%p %p:%s %p:%s\n",
 	 fixp,
 	 fixp->fx_addsy, get_name(fixp->fx_addsy),
 	 fixp->fx_subsy, get_name(fixp->fx_subsy));

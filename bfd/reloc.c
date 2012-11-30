@@ -980,8 +980,6 @@ bfd_install_relocation (bfd *abfd,
   asymbol *symbol;
   bfd_byte *data;
 
-  printf("bfd_install_relocation\n");
-
   symbol = *(reloc_entry->sym_ptr_ptr);
   if (bfd_is_abs_section (symbol->section))
     {

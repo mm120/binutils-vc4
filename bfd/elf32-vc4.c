@@ -28,7 +28,9 @@
 #include "libiberty.h"
 #include <assert.h>
 #include <ctype.h>
-//#include "opcode/vc4.h"
+#include "opcode/vc4.h"
+
+unsigned int debug_ctrl = 0;
 
 static char *dump_uint16s(char *buf, const uint16_t *dat, size_t len);
 
@@ -420,7 +422,7 @@ vc4_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
   for (i = ARRAY_SIZE(bfd_fixup_table); --i;)
     if (bfd_fixup_table[i].bfd_reloc_val == code) {
       unsigned int val = bfd_fixup_table[i].vc4_reloc_val;
-      printf("%s %d %d %d\n", __FUNCTION__, code, val, vc4_elf_howto_table[val].type);
+      DEBUGn(FIX, "%d %d %d\n", code, val, vc4_elf_howto_table[val].type);
 
       assert(vc4_elf_howto_table[val].type == val);
 
@@ -546,7 +548,7 @@ vc4_final_link_relocate (reloc_howto_type *howto,
     case R_VC4_IMM32:
     case R_VC4_IMM32_2:
 
-      printf("%s: %d 0x%x %d\n", __func__, howto->type, (int)rel->r_offset, (int)relocation);
+      DEBUGn(FIX, "%d 0x%x %d\n", howto->type, (int)rel->r_offset, (int)relocation);
 
       contents += rel->r_offset;
       srel = (bfd_signed_vma) relocation;
@@ -645,7 +647,7 @@ vc4_elf_relocate_section (bfd *output_bfd,
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
 
-  printf("%s\n", __func__);
+  DEBUGn(RELOC, "\n");
 
   symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
@@ -774,7 +776,7 @@ vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
   reloc_howto_type *howto = reloc_entry->howto;
   asection *reloc_target_output_section;
 
-  printf("%s\n", __FUNCTION__);
+  DEBUGn(RELOC, "\n");
 
   if (bfd_is_abs_section (symbol->section)
       && output_bfd != NULL)
@@ -782,7 +784,6 @@ vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
       reloc_entry->address += input_section->output_offset;
       return bfd_reloc_ok;
     }
-  printf("%s a\n", __FUNCTION__);
 
   /* If we are not producing relocatable output, return an error if
      the symbol is not defined.  An undefined weak symbol is
@@ -795,7 +796,6 @@ vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
   /* Is the address of the relocation really within the section?  */
   if (reloc_entry->address > bfd_get_section_limit (abfd, input_section))
     return bfd_reloc_outofrange;
-  printf("%s c\n", __FUNCTION__);
 
   /* Work out which section the relocation is targeted at and the
      initial relocation command value.  */
@@ -859,7 +859,6 @@ vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
       if (howto->pcrel_offset)
 	relocation -= reloc_entry->address;
     }
-  printf("%s d\n", __FUNCTION__);
 
   if (output_bfd != NULL)
     {
@@ -905,8 +904,6 @@ vc4_elf_reloc (bfd *abfd ATTRIBUTE_UNUSED,
 			       howto->rightshift,
 			       bfd_arch_bits_per_address (abfd),
 			       relocation);
-
-  printf("%s %d\n", __FUNCTION__, (int)relocation);
 
   vc4_poke_reloc_value(abfd, (unsigned char *) data + octets, howto->type, relocation);
 
@@ -1223,22 +1220,22 @@ static void make_tab2(void)
   }
 
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
-    printf("TAB %4d %2d %d %04llx%016llx %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %s\n",
-	   bfd_fixup_table[i].bfd_reloc_val, i,
-	   bfd_fixup_table2[i].length,
-	   bfd_fixup_table2[i].mask.hi,
-	   bfd_fixup_table2[i].mask.lo,
-	   vc4_elf_howto_table[i].name,
-	   bfd_fixup_table2[i].fix[0].ins_mask,
-	   bfd_fixup_table2[i].fix[0].ins_word,
-	   bfd_fixup_table2[i].fix[0].val_shift,
-	   bfd_fixup_table2[i].fix[1].ins_mask,
-	   bfd_fixup_table2[i].fix[1].ins_word,
-	   bfd_fixup_table2[i].fix[1].val_shift,
-	   bfd_fixup_table2[i].fix[2].ins_mask,
-	   bfd_fixup_table2[i].fix[2].ins_word,
-	   bfd_fixup_table2[i].fix[2].val_shift,
-	   bfd_fixup_table[i].str);
+    DEBUG(TABLE, "TAB %4d %2d %d %04llx%016llx %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %s\n",
+	  bfd_fixup_table[i].bfd_reloc_val, i,
+	  bfd_fixup_table2[i].length,
+	  bfd_fixup_table2[i].mask.hi,
+	  bfd_fixup_table2[i].mask.lo,
+	  vc4_elf_howto_table[i].name,
+	  bfd_fixup_table2[i].fix[0].ins_mask,
+	  bfd_fixup_table2[i].fix[0].ins_word,
+	  bfd_fixup_table2[i].fix[0].val_shift,
+	  bfd_fixup_table2[i].fix[1].ins_mask,
+	  bfd_fixup_table2[i].fix[1].ins_word,
+	  bfd_fixup_table2[i].fix[1].val_shift,
+	  bfd_fixup_table2[i].fix[2].ins_mask,
+	  bfd_fixup_table2[i].fix[2].ins_word,
+	  bfd_fixup_table2[i].fix[2].val_shift,
+	  bfd_fixup_table[i].str);
   }
 
 }
@@ -1370,7 +1367,8 @@ void vc4_bfd_fixup_set(bfd_reloc_code_real_type bfd_fixup, uint16_t *ins, long v
   char buf[80];
   size_t j;
 
-  printf("%s: %s = %ld (%d)  %llx%llx\n", __func__, dump_uint16s(buf, ins, len),
+  DEBUGn(FIX, "%s = %ld (%d)  %llx%llx\n",
+	 dump_uint16s(buf, ins, len),
 	 val, bfd_fixup, mask.hi, mask.lo);
 
   for (j = 0; bfd_fixup_table2[i].fix[j].ins_mask; j++) {
@@ -1386,7 +1384,7 @@ void vc4_bfd_fixup_set(bfd_reloc_code_real_type bfd_fixup, uint16_t *ins, long v
     ins[iw] |= im & vt;
   }
 
-  printf("%s: %s done\n", __func__, dump_uint16s(buf, ins, len));
+  DEBUGn(FIX, "%s done\n", dump_uint16s(buf, ins, len));
 }
 
 

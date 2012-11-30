@@ -92,13 +92,13 @@ struct vc4_frag_type
 
 typedef struct fix fixS;
 
-/*void vc4_init_frag(fragS *f);*/
-/*void vc4_init_fix(fixS *f);*/
+void vc4_init_frag(fragS *f);
+void vc4_init_fix(fixS *f);
 
 #define TC_FRAG_TYPE		struct vc4_frag_type
-/*#define TC_FRAG_INIT(fragp)	vc4_init_frag(fragp)*/
-/*#define TC_FIX_TYPE             int*/
-/*#define TC_INIT_FIX_DATA(fixp)  vc4_init_fix(fixp)*/
+#define TC_FRAG_INIT(fragp)	vc4_init_frag(fragp)
+#define TC_FIX_TYPE             int
+#define TC_INIT_FIX_DATA(fixp)  vc4_init_fix(fixp)
 
 #define md_apply_fix md_apply_fix
 
