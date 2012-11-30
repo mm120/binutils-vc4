@@ -941,7 +941,7 @@ static void build_match(struct match_ops *match, struct op_info *ops)
 	if (!vc4_param_fits(&opcode->op->params[i], &val))
 	  match->broken = 1;
 	
-	DEBUG(OPS, "ON: %lld %d %d\n",
+	DEBUG(OPS, "ON: %lld %zd %d\n",
 	      (long long)ops[i].exp.X_add_number,
 	      opcode->op->params[i].num_width,
 	      match->broken);
@@ -970,7 +970,7 @@ static void build_match(struct match_ops *match, struct op_info *ops)
 				  vc4_param_divide(match->param->type));
 
     if (match->bfd_fixup == 0) {
-      as_bad("%s: Can't find bfd fixup type! %d %s  %s %c %d %d\n", __func__,
+      as_bad("%s: Can't find bfd fixup type! %zd %s  %s %c %d %d\n", __func__,
 	     match->param->num_width,
 	     dump_op_info(match->op_inf, buf),
 	     opcode->op->string,
@@ -1041,7 +1041,7 @@ md_assemble (char * str)
 
   for (match_index = 0; match_index < num_matches; ) {
     if (matches[match_index].broken) {
-      DEBUG(MATCH, "X %d %d\n", match_index, num_matches);
+      DEBUG(MATCH, "X %zd %zd\n", match_index, num_matches);
       memmove(&matches[match_index], &matches[match_index+1], sizeof(matches[0]) * (num_matches - match_index));
       num_matches--;
     } else {
@@ -1065,7 +1065,7 @@ md_assemble (char * str)
 
   if (num_matches > 1 && matches[0].set) {
 
-    DEBUG(FRAG, "frag_var: %d %p\n", opcode->op->length, frag_now);
+    DEBUG(FRAG, "frag_var: %zd %p\n", opcode->op->length, frag_now);
 
     frag_now->tc_frag_data.num = num_matches;
     frag_now->tc_frag_data.cur = 0;
@@ -1091,7 +1091,7 @@ md_assemble (char * str)
 		    frag_now->tc_frag_data.op_inf.exp.X_add_number,
 		    (char *)opcode); /* fr_opcode */
 
-    DEBUGn(FRAG, "frag_var %s %d %d/%d %d %d %s\n",
+    DEBUGn(FRAG, "frag_var %s %d %zd/%zd %zd %zd %s\n",
 	   vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
 	   matches[0].bfd_fixup,
 	   matches[0].param->num_width,
@@ -1110,7 +1110,7 @@ md_assemble (char * str)
 
       if (matches[0].op_inf->exp.X_op == O_symbol) {
 
-	DEBUGn(FIX, "fix_new_exp %s %d %d/%d %d %d %s\n",
+	DEBUGn(FIX, "fix_new_exp %s %d %zd/%zd %zd %zd %s\n",
 	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
 	       matches[0].bfd_fixup,
 	       matches[0].param->num_width,
@@ -1126,7 +1126,7 @@ md_assemble (char * str)
 		    matches[0].bfd_fixup);
       } else {
 
-	DEBUGn(FIX, "fixup_odd %s %d %d/%d %d %d %s\n",
+	DEBUGn(FIX, "fixup_odd %s %d %zd/%zd %zd %zd %s\n",
 	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
 	       matches[0].bfd_fixup,
 	       matches[0].param->num_width,
@@ -1300,7 +1300,7 @@ md_convert_frag (bfd *   abfd ATTRIBUTE_UNUSED,
   struct vc4_frag_option *fo = &fragP->tc_frag_data.d[fragP->tc_frag_data.cur];
   size_t i;
 
-  DEBUGn(FRAG, "frag %p bfd_type %d index %d/%d\n", fragP,
+  DEBUGn(FRAG, "frag %p bfd_type %d index %zd/%zd\n", fragP,
 	 fo->bfd_fixup,
 	 fragP->tc_frag_data.cur,
 	 fragP->tc_frag_data.num);
@@ -1481,7 +1481,7 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 	    value >>= 2;
 	    break;
 	  default:
-	    as_fatal("vc4_bfd_fixup_get_divide not 1, 2, or 4! (%d)",
+	    as_fatal("vc4_bfd_fixup_get_divide not 1, 2, or 4! (%zd)",
 		     vc4_bfd_fixup_get_divide(fixP->fx_r_type));
 	  }
 

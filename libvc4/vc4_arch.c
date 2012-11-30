@@ -1031,7 +1031,7 @@ static void vc4_go_expand(struct vc4_info *info,
 		if (c == str) {
 			r = asprintf(&new_str, "%s%s", t->tab[i], c + l0);
 		} else {
-			r = asprintf(&new_str, "%.*s%s%s", c - str, str, t->tab[i], c + l0);
+			r = asprintf(&new_str, "%.*s%s%s", (int)(c - str), str, t->tab[i], c + l0);
 		}
 		vc4_go_expand(info, op, new_str, &new_pat);
 		free(new_str);

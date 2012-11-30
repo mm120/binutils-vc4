@@ -1151,7 +1151,7 @@ static void make_tab2(void)
       uint128_shr(&mask, 16);
     }
     if (len == 0) {
-      fprintf(stderr, "Bad len %d %d %llx:%llx\n",
+      fprintf(stderr, "Bad len %d %zd %"PRIx64":%"PRIx64"\n",
 	      bfd_fixup_table[i].bfd_reloc_val, i,
 	      bfd_fixup_table[i].m.mask.hi,
 	      bfd_fixup_table[i].m.mask.lo);
@@ -1218,7 +1218,7 @@ static void make_tab2(void)
   }
 
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
-    DEBUG(TABLE, "TAB %4d %2d %d %d %04llx%016llx %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %c %s\n",
+    DEBUG(TABLE, "TAB %4d %2zd %zd %d %04"PRIx64"%016"PRIx64" %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %c %s\n",
 	  bfd_fixup_table[i].bfd_reloc_val, i,
 	  bfd_fixup_table[i].length,
 	  bfd_fixup_table[i].is_s48,
