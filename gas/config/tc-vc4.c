@@ -1080,7 +1080,7 @@ md_assemble (char * str)
 
     for (i=1; i<num_matches; i++) {
       if (matches[0].op_inf != matches[i].op_inf) {
-	as_fatal("To options don't have the same op_info??");
+	as_fatal("Two options don't have the same op_info??");
       }
     }
 
@@ -1129,7 +1129,6 @@ md_assemble (char * str)
 		    vc4_param_pc_rel(matches[0].param->type),
 		    matches[0].bfd_fixup);
       } else {
-	/*as_fatal("Didn't think this could happen?");*/
 
 	DEBUGn(FIX, "fixup_odd %s %d %d/%d %d %d %llx%llx %s\n",
 	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
@@ -1173,7 +1172,6 @@ md_undefined_symbol (char * name ATTRIBUTE_UNUSED)
 int vc4_relax_frag(asection *s, struct frag *fragP, long l)
 {
   const struct vc4_asm *as = (const struct vc4_asm *)fragP->fr_opcode;
-  /*char buf[256];*/
 
   DEBUGn(FRAG, "%p %p %lx | %x %x  %d %d %d  %s  <%s>\n", s, fragP, l,
 	 (unsigned int)fragP->fr_address, (unsigned int)fragP->last_fr_address,
@@ -1280,8 +1278,7 @@ md_estimate_size_before_relax (fragS * fragP, segT segment)
 
 void vc4_init_fix(fixS *f)
 {
-  DEBUGn(FIX, "%p %p:%s %p:%s  %d\n",
-	 f,
+  DEBUGn(FIX, "%p %p:%s %p:%s  %d\n", f,
 	 f->fx_addsy, get_name(f->fx_addsy),
 	 f->fx_subsy, get_name(f->fx_subsy), f->fx_r_type);
 }
@@ -1326,7 +1323,7 @@ md_convert_frag (bfd *   abfd ATTRIBUTE_UNUSED,
 
   buf = fragP->fr_literal + fragP->fr_fix;
 
-  DEBUGn(FRAG, "%p\n", f);
+  DEBUGn(FIX, "fix %p\n", f);
 
   for (i=0; i<fo->as->op->length; i++) {
     bfd_putl16 ((bfd_vma)fo->ins[i], buf + i * 2);
@@ -1399,8 +1396,8 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 {
   gas_assert (fixP->fx_r_type <= BFD_RELOC_UNUSED);
 
-  DEBUGn(FIX, "%d %s 0x%lx %p %p %d\n",
-	 fixP->fx_r_type, ""/*bfd_reloc_code_real_names[fixP->fx_r_type]*/,
+  DEBUGn(FIX, "%d 0x%lx %p %p %d\n",
+	 fixP->fx_r_type,
 	 fixP->fx_where,
 	 fixP->fx_addsy, fixP->fx_subsy, fixP->fx_pcrel);
 
