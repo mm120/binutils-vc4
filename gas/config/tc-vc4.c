@@ -1,7 +1,7 @@
 /* tc-vc4.c -- Assembler for the Vc4 family.
-   Copyright 2001, 2002, 2003, 2005, 2006, 2007, 2009
+   Copyright 2012
    Free Software Foundation.
-   Contributed by Johan Rydberg, jrydberg@opencores.org
+   Contributed by Mark Marshall, markmarshall14@gmail.com
 
    This file is part of GAS, the GNU Assembler.
 

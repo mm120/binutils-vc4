@@ -1,6 +1,6 @@
-/* VC$ ELF support for BFD.
-   Copyright 2007, 2010 Free Software Foundation, Inc.
-   Contributed by M R Swami Reddy.
+/* VC4 ELF support for BFD.
+   Copyright 2012 Free Software Foundation, Inc.
+   Contributed by Mark Marshall, markmarshall14@gmail.com
 
    This file is part of BFD, the Binary File Descriptor library.
 

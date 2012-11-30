@@ -1,7 +1,7 @@
 /* VC4-specific support for 32-bit ELF.
    Copyright 2012
    Free Software Foundation, Inc.
-   Contributed by Johan Rydberg, jrydberg@opencores.org
+   Contributed by Mark Marshall, markmarshall14@gmail.com
 
    This file is part of BFD, the Binary File Descriptor library.
 

@@ -1,6 +1,6 @@
 /* Disassembler code for VC4.
-   Copyright 2007, 2008, 2009, 2012  Free Software Foundation, Inc.
-   Contributed by M R Swami Reddy (MR.Swami.Reddy@nsc.com).
+   Copyright 2012  Free Software Foundation, Inc.
+   Contributed by Mark Marshall, markmarshall14@gmail.com
 
    This file is part of GAS, GDB and the GNU binutils.
 

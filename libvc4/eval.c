@@ -1,3 +1,6 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE         /* See feature_test_macros(7) */
+#endif
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>

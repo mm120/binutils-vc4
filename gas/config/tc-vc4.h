@@ -1,5 +1,6 @@
 /* tc-vc4.h -- Header file for tc-vc4.c.
-   Copyright 2001, 2002, 2003, 2005, 2007 Free Software Foundation, Inc.
+   Copyright 2012 Free Software Foundation, Inc.
+   Contributed by Mark Marshall, markmarshall14@gmail.com
 
    This file is part of GAS, the GNU Assembler.
 

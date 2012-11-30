@@ -586,8 +586,6 @@ bfd_perform_relocation (bfd *abfd,
   reloc_howto_type *howto = reloc_entry->howto;
   asection *reloc_target_output_section;
   asymbol *symbol;
-  
-  printf("bfd_perform_relocation\n");
 
   symbol = *(reloc_entry->sym_ptr_ptr);
   if (bfd_is_abs_section (symbol->section)
