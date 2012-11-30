@@ -5506,45 +5506,53 @@ giving a 16 bit signed byte offset.  */
 /* Adapteva EPIPHANY - 8 bit immediate for 16 bit mov instruction.  */
   BFD_RELOC_EPIPHANY_IMM8,
 
-/* VideoCore IV 7-bit number (in uint16 0)
+/* VideoCore IV 7-bit number (in uint16 1)
 
+o
 0001 1ccc cooo oooo                  "; b%s<c> 0x%08x<$+o*2>"  */
   BFD_RELOC_VC4_REL7_MUL2,
 
-/* VideoCore IV 8-bit number (in uint16 1)
+/* VideoCore IV 8-bit number (in uint16 2)
 
+o
 1000 cccc aaaa dddd 10uu uuuu oooo oooo  "; addcmpb%s<c> r%i<d>, r%i<a>, #%i<u>, 0x%08x<$+o*2>"  */
   BFD_RELOC_VC4_REL8_MUL2,
 
-/* VideoCore IV 10-bit number (in uint16 1)
+/* VideoCore IV 10-bit number (in uint16 2)
 
+o
 1000 cccc aaaa dddd 00ss ssoo oooo oooo  "; addcmpb%s<c> r%i<d>, r%i<a>, r%i<s>, 0x%08x<$+o*2>"  */
   BFD_RELOC_VC4_REL10_MUL2,
 
-/* VideoCore IV 16-bit number (in uint16 1)
+/* VideoCore IV 16-bit number (in uint16 2)
 
+o
 1011 1111 111d dddd oooo oooo oooo oooo  "; lea r%i<d>, 0x%08x<$+o> ;pc"  */
   BFD_RELOC_VC4_REL16,
 
-/* VideoCore IV 23-bit number (in uint16's 0 & 1)
+/* VideoCore IV 23-bit number (in uint16's 1 & 2)
 
+o
 1001 cccc 0ooo oooo oooo oooo oooo oooo  "; b%s<c> 0x%08x<$+o*2>"  */
   BFD_RELOC_VC4_REL23_MUL2,
 
-/* VideoCore IV 27-bit number (in uint16's 1 & 2)
+/* VideoCore IV 27-bit number (in uint16's 2 & 3)
 
+o
 1110 0111 ww0d dddd 1111 1ooo oooo oooo oooo oooo oooo oooo "; ld%s<w> r%i<d>, 0x%08x<$+o> ;(pc)"  */
   BFD_RELOC_VC4_REL27,
 
 /* VideoCore IV 27-bit number (in uint16's 1 & 2)
 
+o
 1001 oooo 1ooo oooo oooo oooo oooo oooo  "; bl  0x%08x<$+o*2>"
 
 (Note split of 'o' field)  */
   BFD_RELOC_VC4_REL27_MUL2,
 
-/* VideoCore IV 32-bit number (in uint16's 1 & 2)
+/* VideoCore IV 32-bit number (in uint16's 2 & 3)
 
+o
 1110 0101 000d dddd oooo oooo oooo oooo oooo oooo oooo oooo  "; lea r%i<d>, 0x%08x<$+o> ;(pc)"  */
   BFD_RELOC_VC4_REL32,
 
@@ -5554,7 +5562,7 @@ o
 0000 010o oooo dddd  "; ld r%i<d>, 0x%02x<o*4>(sp)"  */
   BFD_RELOC_VC4_IMM5_MUL4,
 
-/* VideoCore IV 5-bit number (in uint16 2)
+/* VideoCore IV 5-bit number (in uint16 1)
 
 o
 0000 010o oooo dddd  "; ld r%i<d>, 0x%02x<o*4>(sp)"  */
@@ -5566,21 +5574,24 @@ u
 1010 0000 ww1d dddd aaaa accc c10u uuuu  "; st%s<w>%s<c> r%i<d>, 0x%x<u>(r%i<a>)"  */
   BFD_RELOC_VC4_IMM5_2,
 
-/* VideoCore IV 6-bit number (in uint16 2)  */
+/* VideoCore IV 6-bit number
+
+<unused>  */
   BFD_RELOC_VC4_IMM6,
 
-/* VideoCore IV 16-bit number (in uint16 2)
+/* VideoCore IV 16-bit number (in uint16 1)
 
+o
 0001 0ooo ooo1 1001  */
   BFD_RELOC_VC4_IMM6_MUL4,
 
-/* VideoCore IV 11-bit number (in uint16 2)
+/* VideoCore IV 11-bit number (in uint16 1)
 
 x
 1111 0xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy  "; vector48 0x%x<x>, 0x%x<y>"  */
   BFD_RELOC_VC4_IMM11,
 
-/* VideoCore IV 11-bit number (in uint16 2)
+/* VideoCore IV 11-bit number (in uint16 1 & 2)
 
 o (note split field)
 1010 001o ww0d dddd ssss sooo oooo oooo  "; ld%s<w> r%i<d>, 0x%x<o>(r%i<s>)"  */
@@ -5592,21 +5603,24 @@ o
 1010 1000 ww0d dddd oooo oooo oooo oooo  "; ld%s<w> r%i<d>, 0x%0x<o>(r24)"  */
   BFD_RELOC_VC4_IMM16,
 
-/* VideoCore IV 32-bit number (in uint16's 1 & 2)  */
+/* VideoCore IV 32-bit number
+
+<unused>  */
   BFD_RELOC_VC4_IMM23,
 
-/* VideoCore IV 32-bit number (in uint16's 1 & 2)
+/* VideoCore IV 32-bit number (in uint16's 2 & 3)
 
 o
 1110 0111 ww0d dddd ssss sooo oooo oooo oooo oooo oooo oooo  "; ld%s<w> r%i<d>, 0x%08x<o>(r%i<s>)"  */
   BFD_RELOC_VC4_IMM27,
 
-/* VideoCore IV 32-bit number (in uint16's 1 & 2)
+/* VideoCore IV 32-bit number (in uint16's 2 & 3)
 
+u
 1110 0000 ssss dddd uuuu uuuu uuuu uuuu uuuu uuuu uuuu uuuu  "; op0"  */
   BFD_RELOC_VC4_IMM32,
 
-/* VideoCore IV 32-bit number  (in uint16's 3 & 4)
+/* VideoCore IV 32-bit number  (in uint16's 4 & 5)
 
 z
 1111 1xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy zzzz zzzz zzzz zzzz zzzz zzzz zzzz zzzz    "; vector80 0x%x<x>, 0x%x<y>, 0x%x<z>"  */
