@@ -1091,15 +1091,13 @@ md_assemble (char * str)
 		    frag_now->tc_frag_data.op_inf.exp.X_add_number,
 		    (char *)opcode); /* fr_opcode */
 
-    DEBUGn(FRAG, "frag_var %s %d %d/%d %d %d %llx%llx %s\n",
+    DEBUGn(FRAG, "frag_var %s %d %d/%d %d %d %s\n",
 	   vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
 	   matches[0].bfd_fixup,
 	   matches[0].param->num_width,
 	   vc4_bfd_fixup_get_width(matches[0].bfd_fixup),
 	   vc4_bfd_fixup_get_length(matches[0].bfd_fixup),
 	   vc4_bfd_fixup_get_divide(matches[0].bfd_fixup),
-	   vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).hi,
-	   vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).lo,
 	   dump_op_info(matches[0].op_inf, buf));
 
   } else {
@@ -1112,15 +1110,13 @@ md_assemble (char * str)
 
       if (matches[0].op_inf->exp.X_op == O_symbol) {
 
-	DEBUGn(FIX, "fix_new_exp %s %d %d/%d %d %d %llx%llx %s\n",
+	DEBUGn(FIX, "fix_new_exp %s %d %d/%d %d %d %s\n",
 	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
 	       matches[0].bfd_fixup,
 	       matches[0].param->num_width,
 	       vc4_bfd_fixup_get_width(matches[0].bfd_fixup),
 	       vc4_bfd_fixup_get_length(matches[0].bfd_fixup),
 	       vc4_bfd_fixup_get_divide(matches[0].bfd_fixup),
-	       vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).hi,
-	       vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).lo,
 	       dump_op_info(matches[0].op_inf, buf));
 	
 	fix_new_exp(frag_now, where,
@@ -1130,15 +1126,13 @@ md_assemble (char * str)
 		    matches[0].bfd_fixup);
       } else {
 
-	DEBUGn(FIX, "fixup_odd %s %d %d/%d %d %d %llx%llx %s\n",
+	DEBUGn(FIX, "fixup_odd %s %d %d/%d %d %d %s\n",
 	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
 	       matches[0].bfd_fixup,
 	       matches[0].param->num_width,
 	       vc4_bfd_fixup_get_width(matches[0].bfd_fixup),
 	       vc4_bfd_fixup_get_length(matches[0].bfd_fixup),
 	       vc4_bfd_fixup_get_divide(matches[0].bfd_fixup),
-	       vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).hi,
-	       vc4_bfd_fixup_get_mask(matches[0].bfd_fixup).lo,
 	       dump_op_info(matches[0].op_inf, buf));
       }
     }

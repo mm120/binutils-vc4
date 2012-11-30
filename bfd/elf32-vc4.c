@@ -30,7 +30,7 @@
 #include <ctype.h>
 #include "opcode/vc4.h"
 
-unsigned int debug_ctrl = 0;
+unsigned int debug_ctrl = 0u;
 
 static char *dump_uint16s(char *buf, const uint16_t *dat, size_t len);
 
@@ -363,21 +363,27 @@ static reloc_howto_type vc4_elf_howto_table[] =
 
 /* Map BFD reloc types to Vc4 ELF reloc types.  */
 
+struct vc4_bfd_mask
+{
+  size_t ins_width;
+  size_t width;
+  uint128_t mask;
+};
+
 struct vc4_bfd_fixup_table
 {
   char code;
+  int is_s48;
   int pc_rel;
   int divide;
   const char *str;
   bfd_reloc_code_real_type bfd_reloc_val;
   unsigned int vc4_reloc_val;
-};
 
-struct vc4_bfd_fixup_table2
-{
-  size_t width;
+  struct vc4_bfd_mask m;
+
   size_t length;
-  uint128_t mask;
+
   struct {
     uint16_t ins_mask;
     uint16_t ins_word;
@@ -385,33 +391,33 @@ struct vc4_bfd_fixup_table2
   } fix[4];
 };
 
-static const struct vc4_bfd_fixup_table bfd_fixup_table[] =
+#define X { 0, 0, { 0, 0 } }, 0, { {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0} } 
+static struct vc4_bfd_fixup_table bfd_fixup_table[] =
   {
-    { ' ', 0, 0, "", BFD_RELOC_NONE, R_VC4_NONE },
-    { 'o', 1, 2, "0001 1ccc cooo oooo", BFD_RELOC_VC4_REL7_MUL2, R_VC4_PCREL7_MUL2 }, /* b%s<c> 0x%08x<$+o*2> */
-    { 'o', 1, 2, "1000 cccc aaaa dddd 10uu uuuu oooo oooo", BFD_RELOC_VC4_REL8_MUL2, R_VC4_PCREL8_MUL2 }, /* addcmpb%s<c> r%i<d>, r%i<a>, #%i<u>, 0x%08x<$+o*2> */
-    { 'o', 1, 2, "1000 cccc aaaa dddd 00ss ssoo oooo oooo", BFD_RELOC_VC4_REL10_MUL2, R_VC4_PCREL10_MUL2 }, /*  */
-    { 'o', 1, 1, "1011 1111 111d dddd oooo oooo oooo oooo", BFD_RELOC_VC4_REL16, R_VC4_PCREL16 }, /*  */
-    { 'o', 1, 2, "1001 cccc 0ooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL23_MUL2, R_VC4_PCREL23_MUL2}, /*  */
-    { 'o', 1, 1, "1110 0111 ww0d dddd 1111 1ooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL27, R_VC4_PCREL27 }, /*  */
-    { 'o', 1, 2, "1001 oooo 1ooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL27_MUL2, R_VC4_PCREL27_MUL2 }, /*  */
-    { 'o', 1, 1, "1110 0101 000d dddd oooo oooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL32, R_VC4_PCREL32 }, /*  */
-    { 'o', 0, 4, "0000 010o oooo dddd", BFD_RELOC_VC4_IMM5_MUL4, R_VC4_IMM5_MUL4 }, /*  */
-    { 'o', 0, 1, "0000 010o oooo dddd", BFD_RELOC_VC4_IMM5_1, R_VC4_IMM5_1 }, /*  */
-    { 'u', 0, 1, "1010 0000 ww1d dddd aaaa accc c10u uuuu", BFD_RELOC_VC4_IMM5_2, R_VC4_IMM5_2 }, /*  */
-    { ' ', 0, 1, "", BFD_RELOC_VC4_IMM6, R_VC4_IMM6 }, /*  */
-    { 'o', 0, 4, "0001 0ooo ooo1 1001", BFD_RELOC_VC4_IMM6_MUL4, R_VC4_IMM6_MUL4 }, /*  */
-    { 'x', 0, 1, "1111 0xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy", BFD_RELOC_VC4_IMM11, R_VC4_IMM11 }, /*  */
-    { 'o', 0, 1, "1010 001o ww0d dddd ssss sooo oooo oooo", BFD_RELOC_VC4_IMM12, R_VC4_IMM12 }, /*  */
-    { 'o', 0, 1, "1010 1000 ww0d dddd oooo oooo oooo oooo", BFD_RELOC_VC4_IMM16, R_VC4_IMM16 }, /*  */
-    { ' ', 0, 0, "", BFD_RELOC_VC4_IMM23, R_VC4_IMM23 }, /*  */
-    { 'o', 0, 1, "1110 0111 ww0d dddd ssss sooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_IMM27, R_VC4_IMM27 }, /*  */
-    { 'u', 0, 1, "1110 0000 ssss dddd uuuu uuuu uuuu uuuu uuuu uuuu uuuu uuuu", BFD_RELOC_VC4_IMM32, R_VC4_IMM32 }, /*  */
-    { 'z', 0, 1, "1111 1xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy zzzz zzzz zzzz zzzz zzzz zzzz zzzz zzzz", BFD_RELOC_VC4_IMM32_2, R_VC4_IMM32_2 }, /*  */
+    { ' ', 0, 0, 0, "", BFD_RELOC_NONE, R_VC4_NONE, X },
+    { 'o', 0, 1, 2, "0001 1ccc cooo oooo", BFD_RELOC_VC4_REL7_MUL2, R_VC4_PCREL7_MUL2, X }, /* b%s<c> 0x%08x<$+o*2> */
+    { 'o', 0, 1, 2, "1000 cccc aaaa dddd 10uu uuuu oooo oooo", BFD_RELOC_VC4_REL8_MUL2, R_VC4_PCREL8_MUL2, X }, /* addcmpb%s<c> r%i<d>, r%i<a>, #%i<u>, 0x%08x<$+o*2> */
+    { 'o', 0, 1, 2, "1000 cccc aaaa dddd 00ss ssoo oooo oooo", BFD_RELOC_VC4_REL10_MUL2, R_VC4_PCREL10_MUL2, X }, /*  */
+    { 'o', 0, 1, 1, "1011 1111 111d dddd oooo oooo oooo oooo", BFD_RELOC_VC4_REL16, R_VC4_PCREL16, X }, /*  */
+    { 'o', 0, 1, 2, "1001 cccc 0ooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL23_MUL2, R_VC4_PCREL23_MUL2, X}, /*  */
+    { 'o', 1, 1, 1, "1110 0111 ww0d dddd 1111 1ooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL27, R_VC4_PCREL27, X }, /*  */
+    { 'o', 0, 1, 2, "1001 oooo 1ooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL27_MUL2, R_VC4_PCREL27_MUL2, X }, /*  */
+    { 'o', 1, 1, 1, "1110 0101 000d dddd oooo oooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_REL32, R_VC4_PCREL32, X }, /*  */
+    { 'o', 0, 0, 4, "0000 010o oooo dddd", BFD_RELOC_VC4_IMM5_MUL4, R_VC4_IMM5_MUL4, X }, /*  */
+    { 'o', 0, 0, 1, "0000 010o oooo dddd", BFD_RELOC_VC4_IMM5_1, R_VC4_IMM5_1, X }, /*  */
+    { 'u', 0, 0, 1, "1010 0000 ww1d dddd aaaa accc c10u uuuu", BFD_RELOC_VC4_IMM5_2, R_VC4_IMM5_2, X }, /*  */
+    { ' ', 0, 0, 1, "", BFD_RELOC_VC4_IMM6, R_VC4_IMM6, X }, /*  */
+    { 'o', 0, 0, 4, "0001 0ooo ooo1 1001", BFD_RELOC_VC4_IMM6_MUL4, R_VC4_IMM6_MUL4, X }, /*  */
+    { 'x', 0, 0, 1, "1111 0xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy", BFD_RELOC_VC4_IMM11, R_VC4_IMM11, X }, /*  */
+    { 'o', 0, 0, 1, "1010 001o ww0d dddd ssss sooo oooo oooo", BFD_RELOC_VC4_IMM12, R_VC4_IMM12, X }, /*  */
+    { 'o', 0, 0, 1, "1010 1000 ww0d dddd oooo oooo oooo oooo", BFD_RELOC_VC4_IMM16, R_VC4_IMM16, X }, /*  */
+    { ' ', 0, 0, 0, "", BFD_RELOC_VC4_IMM23, R_VC4_IMM23, X }, /*  */
+    { 'o', 1, 0, 1, "1110 0111 ww0d dddd ssss sooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_IMM27, R_VC4_IMM27, X }, /*  */
+    { 'u', 1, 0, 1, "1110 0000 ssss dddd uuuu uuuu uuuu uuuu uuuu uuuu uuuu uuuu", BFD_RELOC_VC4_IMM32, R_VC4_IMM32, X }, /*  */
+    { 'z', 0, 0, 1, "1111 1xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy zzzz zzzz zzzz zzzz zzzz zzzz zzzz zzzz", BFD_RELOC_VC4_IMM32_2, R_VC4_IMM32_2, X }, /*  */
   };
+#undef X
 #define BFD_FIXUP_COUNT ARRAY_SIZE(bfd_fixup_table)
-
-static struct vc4_bfd_fixup_table2 bfd_fixup_table2[BFD_FIXUP_COUNT];
 
 static reloc_howto_type *
 vc4_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
@@ -490,7 +496,7 @@ static void vc4_poke_reloc_value(bfd *input_bfd, bfd_byte *contents, unsigned in
     case R_VC4_IMM27:
     case R_VC4_IMM32:
     case R_VC4_IMM32_2:
-      len = bfd_fixup_table2[type].length;
+      len = bfd_fixup_table[type].length;
       assert(len >= 1 && len <= 5);
 
       for (i = 0; i < len; i++) {
@@ -576,7 +582,7 @@ vc4_final_link_relocate (reloc_howto_type *howto,
 
       temp = srel;
 
-      if (bfd_fixup_table[howto->type].code == '0') {
+      if (bfd_fixup_table[howto->type].code == 'o') {
 	// signed
 	temp >>= howto->bitsize - 1;
 	if (temp != 0 && temp != -1)
@@ -1047,52 +1053,36 @@ void uint128_shr(uint128_t *v, size_t count)
 
 static int bfd_fixup_table_done;
 
-static void string_to_mask(const char *str, char code, uint128_t *maskp, size_t *lengthp)
+static void string_to_mask(const char *str, char code,
+			   struct vc4_bfd_mask *p)
 {
   uint128_t mask;
   size_t length, count;
-  uint16_t wm, wc, i;
-  uint128_t mask2;
 
   mask.hi = mask.lo = 0;
-  mask2.hi = mask2.lo = 0;
   length = 0;
   count = 0;
-  wm = 0x8000;
-  wc = 0;
-  i = 0;
+
   for (; *str; str++ ) {
+
     if (isblank(*str)) {
       continue;
     }
 
+    uint128_shl(&mask, 1);
+
     if (*str == code) {
-      wc |= wm;
+      mask.lo |= 1;
       length++;
     }
     count++;
-
-    wm >>= 1;
-    if (wm == 0) {
-      mask2.hi = 0;
-      mask2.lo = wc;
-      uint128_shl(&mask2, i * 16);
-      mask.lo |= mask2.lo;
-      mask.hi |= mask2.hi;
-      wm = 0x8000;
-      wc = 0;
-      i++;
-    }
   }
 
-  assert(wm == 0x8000);
   assert((count % 16) == 0);
 
-  if (lengthp != NULL) 
-    *lengthp = length;
-
-  if (maskp != NULL)
-    *maskp = mask;
+  p->mask = mask;
+  p->width = length;
+  p->ins_width = count;
 }
 
 static uint16_t count_z_lsbs(uint16_t v)
@@ -1149,13 +1139,12 @@ static void make_tab2(void)
 
     string_to_mask(bfd_fixup_table[i].str,
 		   bfd_fixup_table[i].code,
-		   &bfd_fixup_table2[i].mask,
-		   &bfd_fixup_table2[i].width);
+		   &bfd_fixup_table[i].m);
 
     if (strlen(bfd_fixup_table[i].str) == 0)
       continue;
-      
-    mask = bfd_fixup_table2[i].mask;
+
+    mask = bfd_fixup_table[i].m.mask;
     len = 0;
     while (mask.hi != 0 || mask.lo != 0) {
       len++;
@@ -1164,18 +1153,18 @@ static void make_tab2(void)
     if (len == 0) {
       fprintf(stderr, "Bad len %d %d %llx:%llx\n",
 	      bfd_fixup_table[i].bfd_reloc_val, i,
-	      bfd_fixup_table2[i].mask.hi,
-	      bfd_fixup_table2[i].mask.lo);
+	      bfd_fixup_table[i].m.mask.hi,
+	      bfd_fixup_table[i].m.mask.lo);
     }
     assert(len > 0 && len <= 5);
-    bfd_fixup_table2[i].length = len;
+    bfd_fixup_table[i].length = len;
 
-    mask = bfd_fixup_table2[i].mask;
-    len = bfd_fixup_table2[i].length;
-    word_pos = 0;
+    mask = bfd_fixup_table[i].m.mask;
+    len = bfd_fixup_table[i].length;
+    word_pos = (bfd_fixup_table[i].m.ins_width / 16) - 1;
     bit_pos = 1;
     ins_mask = 0;
-    shift = bfd_fixup_table2[i].width;
+    shift = 0;
     j = 0;
 
     while (mask.hi != 0 || mask.lo != 0) {
@@ -1183,10 +1172,10 @@ static void make_tab2(void)
       if (mask.lo & 1) {
 	ins_mask |= bit_pos;
       } else if (ins_mask != 0) {
-	shift -= popcount(ins_mask);
-	bfd_fixup_table2[i].fix[j].ins_mask = ins_mask;
-	bfd_fixup_table2[i].fix[j].ins_word = word_pos;
-	bfd_fixup_table2[i].fix[j].val_shift = shift + count_z_lsbs(ins_mask);
+	bfd_fixup_table[i].fix[j].ins_mask = ins_mask;
+	bfd_fixup_table[i].fix[j].ins_word = word_pos;
+	bfd_fixup_table[i].fix[j].val_shift = shift - count_z_lsbs(ins_mask);
+	shift += popcount(ins_mask);
 	j++;
 	ins_mask = 0;
       }
@@ -1196,75 +1185,79 @@ static void make_tab2(void)
       bit_pos <<= 1;
       if (bit_pos == 0) {
 	if (ins_mask != 0) {
-	  shift -= popcount(ins_mask);
-	  bfd_fixup_table2[i].fix[j].ins_mask = ins_mask;
-	  bfd_fixup_table2[i].fix[j].ins_word = word_pos;
-	  bfd_fixup_table2[i].fix[j].val_shift = shift + count_z_lsbs(ins_mask);
+	  bfd_fixup_table[i].fix[j].ins_mask = ins_mask;
+	  bfd_fixup_table[i].fix[j].ins_word = word_pos;
+	  bfd_fixup_table[i].fix[j].val_shift = shift - count_z_lsbs(ins_mask);
+	  shift += popcount(ins_mask);
 	  j++;
+	  ins_mask = 0;
 	}
-	ins_mask = 0;
 	bit_pos = 0x0001;
-	word_pos++;
+	word_pos--;
       }
     }
 
     if (ins_mask != 0) {
-      shift -= popcount(ins_mask);
-      bfd_fixup_table2[i].fix[j].ins_mask = ins_mask;
-      bfd_fixup_table2[i].fix[j].ins_word = word_pos;
-      bfd_fixup_table2[i].fix[j].val_shift = shift + count_z_lsbs(ins_mask);
+      bfd_fixup_table[i].fix[j].ins_mask = ins_mask;
+      bfd_fixup_table[i].fix[j].ins_word = word_pos;
+      bfd_fixup_table[i].fix[j].val_shift = shift - count_z_lsbs(ins_mask);
+      shift += popcount(ins_mask);
       j++;
     }
 
-    assert(shift == 0);
+    assert(shift == (int16_t)bfd_fixup_table[i].m.width);
+
+    if (bfd_fixup_table[i].is_s48) {
+      for (j = 0; bfd_fixup_table[i].fix[j].ins_mask; j++) {
+	if (bfd_fixup_table[i].fix[j].ins_word == 1)
+	  bfd_fixup_table[i].fix[j].ins_word = 2;
+	else if (bfd_fixup_table[i].fix[j].ins_word == 2)
+	  bfd_fixup_table[i].fix[j].ins_word = 1;
+      }
+    }
   }
 
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
-    DEBUG(TABLE, "TAB %4d %2d %d %04llx%016llx %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %s\n",
+    DEBUG(TABLE, "TAB %4d %2d %d %d %04llx%016llx %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %c %s\n",
 	  bfd_fixup_table[i].bfd_reloc_val, i,
-	  bfd_fixup_table2[i].length,
-	  bfd_fixup_table2[i].mask.hi,
-	  bfd_fixup_table2[i].mask.lo,
+	  bfd_fixup_table[i].length,
+	  bfd_fixup_table[i].is_s48,
+	  bfd_fixup_table[i].m.mask.hi,
+	  bfd_fixup_table[i].m.mask.lo,
 	  vc4_elf_howto_table[i].name,
-	  bfd_fixup_table2[i].fix[0].ins_mask,
-	  bfd_fixup_table2[i].fix[0].ins_word,
-	  bfd_fixup_table2[i].fix[0].val_shift,
-	  bfd_fixup_table2[i].fix[1].ins_mask,
-	  bfd_fixup_table2[i].fix[1].ins_word,
-	  bfd_fixup_table2[i].fix[1].val_shift,
-	  bfd_fixup_table2[i].fix[2].ins_mask,
-	  bfd_fixup_table2[i].fix[2].ins_word,
-	  bfd_fixup_table2[i].fix[2].val_shift,
+	  bfd_fixup_table[i].fix[0].ins_mask,
+	  bfd_fixup_table[i].fix[0].ins_word,
+	  bfd_fixup_table[i].fix[0].val_shift,
+	  bfd_fixup_table[i].fix[1].ins_mask,
+	  bfd_fixup_table[i].fix[1].ins_word,
+	  bfd_fixup_table[i].fix[1].val_shift,
+	  bfd_fixup_table[i].fix[2].ins_mask,
+	  bfd_fixup_table[i].fix[2].ins_word,
+	  bfd_fixup_table[i].fix[2].val_shift,
+	  bfd_fixup_table[i].code,
 	  bfd_fixup_table[i].str);
   }
 
 }
 
-bfd_reloc_code_real_type vc4_bfd_fixup_get(const char *str, char code, int pc_rel, int divide)
+bfd_reloc_code_real_type vc4_bfd_fixup_get(const char *str, char code,
+					   int pc_rel, int divide)
 {
   size_t i;
-  uint128_t mask;
-  size_t width;
+  struct vc4_bfd_mask m;
 
-  string_to_mask(str, code, &mask, &width);
+  string_to_mask(str, code, &m);
 
   make_tab2();
 
-  /*printf("G %llx %llx %d %d %d\n", mask.hi, mask.lo, width, pc_rel, divide);*/
+  /*printf("G %llx %llx %d %d %d\n",
+    m.mask.hi, m.mask.lo, m.width, pc_rel, divide);*/
 
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
-    /*
-    printf("> %llx %llx %d %d %d = %d\n",
-	   bfd_fixup_table2[i].mask.hi,
-	   bfd_fixup_table2[i].mask.lo,
-	   bfd_fixup_table2[i].width,
-	   bfd_fixup_table[i].pc_rel,
-	   bfd_fixup_table[i].divide,
-	   bfd_fixup_table[i].bfd_reloc_val);
-    */
-    if (mask.hi == bfd_fixup_table2[i].mask.hi &&
-	mask.lo == bfd_fixup_table2[i].mask.lo &&
-	width == bfd_fixup_table2[i].width &&
+    if (m.mask.hi == bfd_fixup_table[i].m.mask.hi &&
+	m.mask.lo == bfd_fixup_table[i].m.mask.lo &&
+	m.width == bfd_fixup_table[i].m.width &&
+	m.ins_width == bfd_fixup_table[i].m.ins_width &&
 	pc_rel == bfd_fixup_table[i].pc_rel &&
 	divide == bfd_fixup_table[i].divide) {
       return bfd_fixup_table[i].bfd_reloc_val;
@@ -1297,7 +1290,7 @@ size_t vc4_bfd_fixup_get_width(bfd_reloc_code_real_type bfd_fixup)
 
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
     if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
-      return bfd_fixup_table2[i].width;
+      return bfd_fixup_table[i].m.width;
     }
   }
 
@@ -1325,27 +1318,11 @@ size_t vc4_bfd_fixup_get_length(bfd_reloc_code_real_type bfd_fixup)
 
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
     if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
-      return bfd_fixup_table2[i].length;
+      return bfd_fixup_table[i].length;
     }
   }
 
   return 0;
-}
-
-uint128_t vc4_bfd_fixup_get_mask(bfd_reloc_code_real_type bfd_fixup)
-{
-  size_t i;
-  uint128_t mask = {0,0};
-
-  make_tab2();
-
-  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
-    if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
-      return bfd_fixup_table2[i].mask;
-    }
-  }
-
-  return mask;
 }
 
 static char *dump_uint16s(char *buf, const uint16_t *dat, size_t len)
@@ -1361,20 +1338,19 @@ static char *dump_uint16s(char *buf, const uint16_t *dat, size_t len)
 
 void vc4_bfd_fixup_set(bfd_reloc_code_real_type bfd_fixup, uint16_t *ins, long val)
 {
-  uint128_t mask = vc4_bfd_fixup_get_mask(bfd_fixup);
   size_t len = vc4_bfd_fixup_get_length(bfd_fixup);
   size_t i = vc4_bfd_fixup_get_elf(bfd_fixup);
   char buf[80];
   size_t j;
 
-  DEBUGn(FIX, "%s = %ld (%d)  %llx%llx\n",
+  DEBUGn(FIX, "%s = %ld (%d)\n",
 	 dump_uint16s(buf, ins, len),
-	 val, bfd_fixup, mask.hi, mask.lo);
+	 val, bfd_fixup);
 
-  for (j = 0; bfd_fixup_table2[i].fix[j].ins_mask; j++) {
-    uint16_t iw = bfd_fixup_table2[i].fix[j].ins_word;
-    uint16_t im = bfd_fixup_table2[i].fix[j].ins_mask;
-    int16_t vs = bfd_fixup_table2[i].fix[j].val_shift;
+  for (j = 0; bfd_fixup_table[i].fix[j].ins_mask; j++) {
+    uint16_t iw = bfd_fixup_table[i].fix[j].ins_word;
+    uint16_t im = bfd_fixup_table[i].fix[j].ins_mask;
+    int16_t vs = bfd_fixup_table[i].fix[j].val_shift;
     long vt = val;
     if (vs < 0)
       vt <<= (uint16_t)(-vs);

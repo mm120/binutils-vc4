@@ -106,6 +106,7 @@ void vc4_add_opcode_tab(struct vc4_opcode_tab **tabp, struct vc4_opcode *op)
 	*tabp = tab;
 }
 
+/*
 static void fill_value_u32(uint32_t *ins, uint32_t *ins_mask,
 			   const char *f,
 			   char code, uint32_t val)
@@ -127,7 +128,9 @@ static void fill_value_u32(uint32_t *ins, uint32_t *ins_mask,
 		}
 	}
 }
+*/
 
+/*
 static uint32_t get_u32_2u16(const uint16_t *v)
 {
 	return v[0] | (v[1] << 16);
@@ -138,14 +141,27 @@ static void put_u32_2u16(uint16_t *v, uint32_t d)
 	v[0] = d & 0xffff;
 	v[1] = (d >> 16) & 0xffff;
 }
+*/
 
-void vc4_fill_value(uint16_t *ins, uint16_t *ins_mask, const struct vc4_opcode *op,
+void vc4_swap_ins(uint16_t *ins, const struct vc4_opcode *op)
+{
+	uint16_t t;
+
+	if (op->mode == VC4_INS_SCALAR48) {
+		t = ins[1];
+		ins[1] = ins[2];
+		ins[2] = t;
+	}
+}
+
+void vc4_fill_value(uint16_t *pins, uint16_t *pins_mask, const struct vc4_opcode *op,
 		    char code, uint32_t val)
 {
 	uint16_t mask;
 	const char *f;
 	size_t pi;
-	size_t i0, i1;
+	uint16_t ins[5];
+	uint16_t ins_mask[5];
 
 	assert(op->length >= 1 && op->length <= 5);
 	assert(strlen(op->string) == 16 * op->length);
@@ -155,30 +171,13 @@ void vc4_fill_value(uint16_t *ins, uint16_t *ins_mask, const struct vc4_opcode *
 		return;
 	}
 
-	/* first and last index of code in op->string */
-	i0 = strchr(op->string, code) - op->string;
-	i1 = strrchr(op->string, code) - op->string;
-
-	if (op->mode == VC4_INS_SCALAR48 && i0 >= 16 && i1 < 48) {
-		uint32_t iv, im, oi, t;
-
-		assert(op->length == 3);
-
-		fill_value_u32(&iv, &im, op->string + 48, code, val);
-
-		oi = get_u32_2u16(ins + 1);
-		oi &= ~im;
-		oi |= iv;
-		put_u32_2u16(ins + 1, oi);
-
-		if (ins_mask != NULL) {
-			t = get_u32_2u16(ins_mask + 1);
-			t |= im;
-			put_u32_2u16(ins_mask + 1, t);
-		}
-
-		return;
+	for (pi = 0; pi < op->length; pi++) {
+		ins[pi] = pins[pi];
+		ins_mask[pi] = pins_mask ? pins_mask[pi] : 0;
 	}
+
+	vc4_swap_ins(ins, op);
+	vc4_swap_ins(ins_mask, op);
 
 	mask = 0x0000;
 	pi = op->length;
@@ -198,11 +197,19 @@ void vc4_fill_value(uint16_t *ins, uint16_t *ins_mask, const struct vc4_opcode *
 			ins[pi] &= ~mask;
 			if (val & 1)
 				ins[pi] |= mask;
-			if (ins_mask != NULL)
-				ins_mask[pi] |= mask;
+			ins_mask[pi] |= mask;
 			val >>= 1;
 		}
 		mask <<= 1;
+	}
+
+	vc4_swap_ins(ins, op);
+	vc4_swap_ins(ins_mask, op);
+
+	for (pi = 0; pi < op->length; pi++) {
+		pins[pi] = ins[pi];
+		if (pins_mask != NULL)
+			pins_mask[pi] = ins_mask[pi];
 	}
 }
 

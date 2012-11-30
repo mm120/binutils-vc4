@@ -3,6 +3,12 @@
 	
 	.global delay3
 	.extern delay3
+
+	adds8 r17, 0x12345678
+	vector48 0x7cd, 0x12345678
+	vector80 0xcd, 0x12345678, 0x12345678
+	ld r17, 0x123456(r19)
+	
 delay3:
 	.fill 64,2,1
 	b	delay3

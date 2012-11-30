@@ -236,4 +236,6 @@ int vc4_param_pc_rel(enum vc4_param_type type);
 int vc4_param_divide(enum vc4_param_type type);
 char *vc4_param_print(const struct vc4_param *par, char *buf);
 
+void vc4_swap_ins(uint16_t *ins, const struct vc4_opcode *op);
+
 #endif
