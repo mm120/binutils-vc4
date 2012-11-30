@@ -496,7 +496,7 @@ static void vc4_poke_reloc_value(bfd *input_bfd, bfd_byte *contents, unsigned in
     case R_VC4_IMM27:
     case R_VC4_IMM32:
     case R_VC4_IMM32_2:
-      len = bfd_fixup_table[type].length;
+      len = bfd_fixup_table[type].m.ins_width / 16;
       assert(len >= 1 && len <= 5);
 
       for (i = 0; i < len; i++) {
@@ -1297,6 +1297,20 @@ size_t vc4_bfd_fixup_get_width(bfd_reloc_code_real_type bfd_fixup)
   return 0;
 }
 
+size_t vc4_bfd_fixup_get_ins_length(bfd_reloc_code_real_type bfd_fixup)
+{
+  size_t i;
+
+  make_tab2();
+
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
+      return bfd_fixup_table[i].m.ins_width / 16;
+    }
+  }
+
+  return 0;
+}
 size_t vc4_bfd_fixup_get_divide(bfd_reloc_code_real_type bfd_fixup)
 {
   size_t i;

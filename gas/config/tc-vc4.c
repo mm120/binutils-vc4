@@ -1459,7 +1459,7 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 	case BFD_RELOC_VC4_IMM32:
 	case BFD_RELOC_VC4_IMM32_2:
 
-	  len = vc4_bfd_fixup_get_length(fixP->fx_r_type);
+	  len = vc4_bfd_fixup_get_ins_length(fixP->fx_r_type);
 
 	  for (i=0; i<len; i++) {
 	    ins[i] = bfd_getl16(where + i * 2);
