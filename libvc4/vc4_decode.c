@@ -166,7 +166,7 @@ char *vc4_display(const struct vc4_info *info, const struct vc4_opcode *op,
 			}
 			assert(t != NULL);
 			assert(ev >= 0);
-			assert(ev < t->count);
+			assert((size_t)ev < t->count);
 			r = asprintf(&md, fmt, t->tab[ev]);
 		} else {
 			r = asprintf(&md, fmt, (uint32_t)ev);
