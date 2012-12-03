@@ -36,7 +36,7 @@ bfd_reloc_code_real_type vc4_bfd_fixup_get(const char *str, char code, int pc_re
 size_t vc4_bfd_fixup_get_elf(bfd_reloc_code_real_type bfd_fixup);
 size_t vc4_bfd_fixup_get_width(bfd_reloc_code_real_type bfd_fixup);
 size_t vc4_bfd_fixup_get_divide(bfd_reloc_code_real_type bfd_fixup);
-size_t vc4_bfd_fixup_get_length(bfd_reloc_code_real_type bfd_fixup);
+size_t vc4_bfd_fixup_get_ins_length(bfd_reloc_code_real_type bfd_fixup);
 void vc4_bfd_fixup_set(bfd_reloc_code_real_type bfd_fixup, uint16_t *ins, long val);
 
 

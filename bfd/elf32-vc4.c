@@ -382,8 +382,6 @@ struct vc4_bfd_fixup_table
 
   struct vc4_bfd_mask m;
 
-  size_t length;
-
   struct {
     uint16_t ins_mask;
     uint16_t ins_word;
@@ -391,7 +389,7 @@ struct vc4_bfd_fixup_table
   } fix[4];
 };
 
-#define X { 0, 0, { 0, 0 } }, 0, { {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0} } 
+#define X { 0, 0, { 0, 0 } }, { {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0} } 
 static struct vc4_bfd_fixup_table bfd_fixup_table[] =
   {
     { ' ', 0, 0, 0, "", BFD_RELOC_NONE, R_VC4_NONE, X },
@@ -1119,7 +1117,6 @@ static void make_tab2(void)
 {
   size_t i;
   uint128_t mask;
-  size_t len;
   size_t word_pos = 0;
   uint16_t bit_pos = 1;
   uint16_t ins_mask = 0;
@@ -1145,22 +1142,6 @@ static void make_tab2(void)
       continue;
 
     mask = bfd_fixup_table[i].m.mask;
-    len = 0;
-    while (mask.hi != 0 || mask.lo != 0) {
-      len++;
-      uint128_shr(&mask, 16);
-    }
-    if (len == 0) {
-      fprintf(stderr, "Bad len %d %zd %"PRIx64":%"PRIx64"\n",
-	      bfd_fixup_table[i].bfd_reloc_val, i,
-	      bfd_fixup_table[i].m.mask.hi,
-	      bfd_fixup_table[i].m.mask.lo);
-    }
-    assert(len > 0 && len <= 5);
-    bfd_fixup_table[i].length = len;
-
-    mask = bfd_fixup_table[i].m.mask;
-    len = bfd_fixup_table[i].length;
     word_pos = (bfd_fixup_table[i].m.ins_width / 16) - 1;
     bit_pos = 1;
     ins_mask = 0;
@@ -1220,7 +1201,7 @@ static void make_tab2(void)
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
     DEBUG(TABLE, "TAB %4d %2zd %zd %d %04"PRIx64"%016"PRIx64" %-20s  %04x %d %3d  %04x %d %3d  %04x %d %3d %c %s\n",
 	  bfd_fixup_table[i].bfd_reloc_val, i,
-	  bfd_fixup_table[i].length,
+	  bfd_fixup_table[i].m.ins_width,
 	  bfd_fixup_table[i].is_s48,
 	  bfd_fixup_table[i].m.mask.hi,
 	  bfd_fixup_table[i].m.mask.lo,
@@ -1324,21 +1305,6 @@ size_t vc4_bfd_fixup_get_divide(bfd_reloc_code_real_type bfd_fixup)
   return 0;
 }
 
-size_t vc4_bfd_fixup_get_length(bfd_reloc_code_real_type bfd_fixup)
-{
-  size_t i;
-
-  make_tab2();
-
-  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
-    if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
-      return bfd_fixup_table[i].length;
-    }
-  }
-
-  return 0;
-}
-
 static char *dump_uint16s(char *buf, const uint16_t *dat, size_t len)
 {
   size_t i, o;
@@ -1352,7 +1318,7 @@ static char *dump_uint16s(char *buf, const uint16_t *dat, size_t len)
 
 void vc4_bfd_fixup_set(bfd_reloc_code_real_type bfd_fixup, uint16_t *ins, long val)
 {
-  size_t len = vc4_bfd_fixup_get_length(bfd_fixup);
+  size_t len = vc4_bfd_fixup_get_ins_length(bfd_fixup);
   size_t i = vc4_bfd_fixup_get_elf(bfd_fixup);
   char buf[80];
   size_t j;
