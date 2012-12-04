@@ -24,7 +24,6 @@
 #include "subsegs.h"
 #include "symcat.h"
 #include "safe-ctype.h"
-#include "vc4.h"
 #include <inttypes.h>
 #include <limits.h>
 #include <assert.h>
