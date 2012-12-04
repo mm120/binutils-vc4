@@ -26,8 +26,8 @@
 #include "elf-bfd.h"
 #include "elf/vc4.h"
 #include "libiberty.h"
+#include "safe-ctype.h"
 #include <assert.h>
-#include <ctype.h>
 #include "opcode/vc4.h"
 
 unsigned int debug_ctrl = 0u;
@@ -1062,8 +1062,7 @@ static void string_to_mask(const char *str, char code,
   count = 0;
 
   for (; *str; str++ ) {
-
-    if (isblank(*str)) {
+    if (ISBLANK(*str)) {
       continue;
     }
 

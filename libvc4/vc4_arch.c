@@ -842,6 +842,7 @@ struct vc4_info *vc4_read_arch_file(const char *path)
 	}
 
 	inf = calloc(sizeof(struct vc4_info), 1);
+	buf = malloc(1024);
 
 	for (;;) {
 		if ((r = getline(&line, &len, fp)) < 0)
@@ -855,17 +856,17 @@ struct vc4_info *vc4_read_arch_file(const char *path)
 			buf2[0] = ch;
 			buf2[1] = 0;
 			strcat(inf->signed_ops, buf2);
-		} else if (sscanf(line, " ( define-table %c [ %m[^]]+ ] ) ", &ch, &buf) == 2) {
+		} else if (sscanf(line, " ( define-table %c [ %[^]]+ ] ) ", &ch, buf) == 2) {
 			struct vc4_decode_table *t = vc4_read_table(ch, buf);
 			t->next = inf->tables;
 			inf->tables = t;
-			free(buf);
 		} else {
 			vc4_read_opcode(inf, line);
 		}
 	}
 
 	free(line);
+	free(buf);
 
 	fclose(fp);
 
@@ -1004,7 +1005,9 @@ static void vc4_go_expand(struct vc4_info *info,
 		return;
 	}
 
-	r = sscanf(c, "%m[^{]{%m[^}]}%n", &fmt, &exp, &l0);
+	fmt = malloc(1024);
+	exp = malloc(1024);
+	r = sscanf(c, "%[^{]{%[^}]}%n", fmt, exp, &l0);
 
 	if (r < 2 || fmt == NULL || exp == NULL) {
 		fprintf(stderr, "bad line '%s'\n", str);
@@ -1184,14 +1187,17 @@ void vc4_get_opcodes(struct vc4_info *info)
 	pat.count = 0;
 
 	assert(info->all_asms == NULL);
+	
+	str = malloc(1024);
 
 	for (op = info->all_opcodes; op != NULL; op = op->next) {
 
-		sscanf(op->format, "%ms ", &str);
+		sscanf(op->format, "%s ", str);
 		if (str[0] != '!')
 			vc4_go_expand(info, op, str, &pat);
-		free(str);
 	}
+	
+	free(str);
 
 	vc4_find_relax(info);
 }

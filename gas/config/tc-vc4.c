@@ -23,7 +23,8 @@
 #include "as.h"
 #include "subsegs.h"
 #include "symcat.h"
-#include <ctype.h>
+#include "safe-ctype.h"
+#include "vc4.h"
 #include <inttypes.h>
 #include <limits.h>
 #include <assert.h>
@@ -291,11 +292,11 @@ static char *match_reg(char *str, int *num)
   int l = -1;
   int reg;
 
-  if (str[0] == 'r' && isdigit(str[1])) {
+  if (str[0] == 'r' && ISDIGIT(str[1])) {
 
     r = sscanf(str, "r%d%n", &reg, &l);
 
-    if (r >= 1 && l > 0 && !isalnum(str[l])) {
+    if (r >= 1 && l > 0 && !ISALNUM(str[l])) {
       str += l;
       str = skip_space(str);
       *num = reg;
@@ -303,25 +304,25 @@ static char *match_reg(char *str, int *num)
     }
   }
 
-  if (str[0] == 's' && str[1] == 'p' && !isalnum(str[2])) {
+  if (str[0] == 's' && str[1] == 'p' && !ISALNUM(str[2])) {
     *num = 25;
     str += 2;
     str = skip_space(str);
     return str;
   }
-  if (str[0] == 'l' && str[1] == 'r' && !isalnum(str[2])) {
+  if (str[0] == 'l' && str[1] == 'r' && !ISALNUM(str[2])) {
     *num = 26;
     str += 2;
     str = skip_space(str);
     return str;
   }
-  if (str[0] == 's' && str[1] == 'r' && !isalnum(str[2])) {
+  if (str[0] == 's' && str[1] == 'r' && !ISALNUM(str[2])) {
     *num = 30;
     str += 2;
     str = skip_space(str);
     return str;
   }
-  if (str[0] == 'p' && str[1] == 'c' && !isalnum(str[2])) {
+  if (str[0] == 'p' && str[1] == 'c' && !ISALNUM(str[2])) {
     *num = 31;
     str += 2;
     str = skip_space(str);
@@ -363,7 +364,7 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	return str;
       }
     }
-    else if (strncmp(str, "shl", 3) == 0 && !isalnum(str[3])) {
+    else if (strncmp(str, "shl", 3) == 0 && !ISALNUM(str[3])) {
       str += 3;
       str = skip_space(str);
 
@@ -377,7 +378,7 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
 	return str;
       }
     }
-    else if (strncmp(str, "lsr", 3) == 0 && !isalnum(str[3])) {
+    else if (strncmp(str, "lsr", 3) == 0 && !ISALNUM(str[3])) {
       str += 3;
       str = skip_space(str);
       
@@ -438,7 +439,7 @@ static char *vc4_get_operand(char *str, struct op_info *inf)
     str = old_str;
   }
 
-  if (strcmp(str, "cpuid") == 0 && !isalnum(str[5])) {
+  if (strcmp(str, "cpuid") == 0 && !ISALNUM(str[5])) {
     str += 5;
     inf->type = ot_cpuid;
     return str;
