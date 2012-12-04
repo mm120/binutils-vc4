@@ -644,7 +644,7 @@ struct match_ops
   int set;
   int broken;
   bfd_reloc_code_real_type bfd_fixup;
-  struct op_info *op_inf;
+  size_t op_index;
   const struct vc4_param *param;
 };
 
@@ -662,7 +662,9 @@ static int match_comp(const void *va, const void *vb)
   return 0;
 }
 
-static int match_op_info_to_vc4_asm(struct match_ops *matches,
+#define MAX_MATCHES 10
+
+static int match_op_info_to_vc4_asm(struct match_ops matches[MAX_MATCHES],
 				    size_t count,
 				    const struct op_info *ops,
 				    const struct vc4_asm *list)
@@ -686,11 +688,12 @@ static int match_op_info_to_vc4_asm(struct match_ops *matches,
     this_error = 0;
     for (i=0; i<count; i++) {
       ret = match_op_info_to_vc4_asm_item(&opcode->op->params[i], &ops[i]);
-      matches[num].ers[i] = ret;
       if (ret < 0) {
 	this_error = -1;
 	break;
       }
+      assert(num < MAX_MATCHES);
+      matches[num].ers[i] = ret;
       this_error += ret;
     }
 
@@ -700,6 +703,8 @@ static int match_op_info_to_vc4_asm(struct match_ops *matches,
       num++;
     }
   }
+
+  assert(num <= MAX_MATCHES);
 
   qsort(matches, num, sizeof(matches[0]), match_comp);
 
@@ -752,7 +757,9 @@ static int match_op_info_to_vc4_asm(struct match_ops *matches,
 	num--;
 	j--;
       } else if (dir == -1) {
-	memmove(&matches[j+1], &matches[j+2], sizeof(matches[0]) * (num - j));
+	if ((j + 2u) < (size_t)num) {
+	  memmove(&matches[j+1], &matches[j+2], sizeof(matches[0]) * (num - (j + 2)));
+	}
 	num--;
 	j--;
       }
@@ -851,7 +858,7 @@ static int vc4_param_fits(const struct vc4_param *param, signed long long *pval)
   return 1;
 }
 
-static void build_match(struct match_ops *match, struct op_info *ops)
+static void build_match(struct match_ops *match, const struct op_info *ops)
 {
   size_t i;
   const struct vc4_asm *opcode;
@@ -872,7 +879,7 @@ static void build_match(struct match_ops *match, struct op_info *ops)
   match->set = 0;
   match->broken = 0;
   match->bfd_fixup = 0;
-  match->op_inf = NULL;
+  match->op_index = 0;
   match->param = NULL;
 
   for (i=0; i<opcode->op->num_params; i++) {
@@ -954,7 +961,7 @@ static void build_match(struct match_ops *match, struct op_info *ops)
 	}
 
 	match->set = 1;
-	match->op_inf = &ops[i];
+	match->op_index = i;
 	match->param = &opcode->op->params[i];
       }
     }
@@ -970,7 +977,7 @@ static void build_match(struct match_ops *match, struct op_info *ops)
     if (match->bfd_fixup == 0) {
       as_bad("%s: Can't find bfd fixup type! %zd %s  %s %c %d %d\n", __func__,
 	     match->param->num_width,
-	     dump_op_info(match->op_inf, buf),
+	     dump_op_info(&ops[match->op_index], buf),
 	     opcode->op->string,
 	     match->param->num_code,
 	     vc4_param_pc_rel(match->param->type),
@@ -991,7 +998,7 @@ md_assemble (char * str)
   struct op_info ops[5];
   int count;
   char buf[256];
-  struct match_ops matches[5];
+  struct match_ops matches[MAX_MATCHES];
   size_t num_matches;
   size_t match_index;
 
@@ -1067,7 +1074,7 @@ md_assemble (char * str)
 
     frag_now->tc_frag_data.num = num_matches;
     frag_now->tc_frag_data.cur = 0;
-    frag_now->tc_frag_data.op_inf = *matches[0].op_inf;
+    frag_now->tc_frag_data.op_inf = ops[matches[0].op_index];
 
     for (i=0; i<num_matches; i++) {
       frag_now->tc_frag_data.d[i].as = matches[i].as;
@@ -1077,7 +1084,7 @@ md_assemble (char * str)
     }
 
     for (i=1; i<num_matches; i++) {
-      if (matches[0].op_inf != matches[i].op_inf) {
+      if (matches[0].op_index != matches[i].op_index) {
 	as_fatal("Two options don't have the same op_info??");
       }
     }
@@ -1096,7 +1103,7 @@ md_assemble (char * str)
 	   vc4_bfd_fixup_get_width(matches[0].bfd_fixup),
 	   vc4_bfd_fixup_get_ins_length(matches[0].bfd_fixup),
 	   vc4_bfd_fixup_get_divide(matches[0].bfd_fixup),
-	   dump_op_info(matches[0].op_inf, buf));
+	   dump_op_info(&ops[matches[0].op_index], buf));
 
   } else {
 
@@ -1106,7 +1113,7 @@ md_assemble (char * str)
 
       int where = frag - frag_now->fr_literal;
 
-      if (matches[0].op_inf->exp.X_op == O_symbol) {
+      if (ops[matches[0].op_index].exp.X_op == O_symbol) {
 
 	DEBUGn(FIX, "fix_new_exp %s %d %zd/%zd %zd %zd %s\n",
 	       vc4_param_pc_rel(matches[0].param->type) ? "pc-rel" : "imm",
@@ -1115,11 +1122,11 @@ md_assemble (char * str)
 	       vc4_bfd_fixup_get_width(matches[0].bfd_fixup),
 	       vc4_bfd_fixup_get_ins_length(matches[0].bfd_fixup),
 	       vc4_bfd_fixup_get_divide(matches[0].bfd_fixup),
-	       dump_op_info(matches[0].op_inf, buf));
+	       dump_op_info(&ops[matches[0].op_index], buf));
 	
 	fix_new_exp(frag_now, where,
 		    opcode->op->length * 2,
-		    &matches[0].op_inf->exp,
+		    &ops[matches[0].op_index].exp,
 		    vc4_param_pc_rel(matches[0].param->type),
 		    matches[0].bfd_fixup);
       } else {
@@ -1131,7 +1138,7 @@ md_assemble (char * str)
 	       vc4_bfd_fixup_get_width(matches[0].bfd_fixup),
 	       vc4_bfd_fixup_get_ins_length(matches[0].bfd_fixup),
 	       vc4_bfd_fixup_get_divide(matches[0].bfd_fixup),
-	       dump_op_info(matches[0].op_inf, buf));
+	       dump_op_info(&ops[matches[0].op_index], buf));
       }
     }
   }
