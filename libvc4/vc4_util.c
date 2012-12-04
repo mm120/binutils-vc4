@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <inttypes.h>
 #include <assert.h>
-#include <ctype.h>
+#include "safe-ctype.h"
 
 #include "vc4.h"
 
@@ -53,12 +53,12 @@ void vc4_trim_space(char *p)
 {
 	if (p == NULL)
 		return;
-	while (isblank(*p)) {
+	while (ISBLANK(*p)) {
 		memmove(p, p+1, strlen(p));
 	}
 	char *q;
 	q = p + strlen(p);
-	while (q > p  && isblank(q[-1])) {
+	while (q > p  && ISBLANK(q[-1])) {
 		q[-1] = 0;
 		q--;
 	}

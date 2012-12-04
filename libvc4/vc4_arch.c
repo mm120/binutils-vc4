@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <inttypes.h>
 #include <assert.h>
-#include <ctype.h>
+#include "safe-ctype.h"
 
 #include "vc4.h"
 
@@ -27,7 +27,7 @@ static struct vc4_decode_table *vc4_read_table(char ch, const char *s)
 	t->count = 0;
 
 	while (*s) {
-		while (isspace(*s)) {
+		while (ISSPACE(*s)) {
 			s++;
 			if (!*s) {
 				assert(t->count > 0);
@@ -53,7 +53,7 @@ static struct vc4_decode_table *vc4_read_table(char ch, const char *s)
 
 		t->count++;
 
-		while (isspace(*s)) {
+		while (ISSPACE(*s)) {
 			s++;
 		}
 
@@ -83,12 +83,12 @@ static int vc4_remove_comment(char *p)
 		} else if (*p == '#' && !in_quote) {
 			*p = 0;
 			return empty;
-		} else if (!isspace(*p)) {
+		} else if (!ISSPACE(*p)) {
 			empty = 0;
 		}
 		p++;
 	}
-	while (p > start && isspace(p[-1])) {
+	while (p > start && ISSPACE(p[-1])) {
 		*--p = 0;
 	}
 	return empty;
@@ -636,7 +636,7 @@ static void vc4_build_params(struct vc4_opcode *op)
 	if (p0 != NULL) {
 
 		for (;;) {
-			while (isblank(*p0))
+			while (ISBLANK(*p0))
 				p0++;
 
 			char *p1 = strchr(p0, ',');
@@ -650,7 +650,7 @@ static void vc4_build_params(struct vc4_opcode *op)
 				break;
 
 			p0 = p1;
-			while (isblank(*p0))
+			while (ISBLANK(*p0))
 				p0++;
 		}
 	}
@@ -733,7 +733,7 @@ static int scan_format(char *d, const char **pp)
 	char *dd = d;
 
 	for (;;) {
-		if (isspace(*p)) {
+		if (ISSPACE(*p)) {
 			p++;
 			continue;
 		}
@@ -784,7 +784,7 @@ static struct vc4_opcode *vc4_scan_opcode(const char *line)
 		abort();
 	}
 
-	while (*p && isspace(*p))
+	while (*p && ISSPACE(*p))
 		p++;
 	if (!*p)
 		return NULL;

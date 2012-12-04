@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <inttypes.h>
 #include <assert.h>
-#include <ctype.h>
+#include "safe-ctype.h"
 
 #include "eval.h"
 
@@ -61,7 +61,7 @@ int64_t eval_factor(struct ev_input *e)
 {
 	int64_t v;
 
-	if (isdigit(ev_peekc(e))) {
+	if (ISDIGIT(ev_peekc(e))) {
 		v = ev_strtoll(e);
 	} else if (ev_peekc(e) == '-') {
 		ev_getc(e);
