@@ -147,9 +147,13 @@ char *vc4_display(const struct vc4_info *info, const struct vc4_opcode *op,
 
 		assert(c[0] == '%');
 
-		r = sscanf(c, "%m[^{]{%m[^}]}%n", &fmt, &exp, &l0);
+		fmt = malloc(strlen(c));
+		exp = malloc(strlen(c));
+		l0 = -1;
 
-		if (r < 2 || fmt == NULL || exp == NULL) {
+		r = sscanf(c, "%[^{]{%[^}]}%n", fmt, exp, &l0);
+
+		if (r < 2 || l0 < 2 || fmt == NULL || exp == NULL) {
 			fprintf(stderr, "bad line  %s/%s/%s %d %d\n", fmt, exp, c+l0, l0, r);
 			abort();
 		}

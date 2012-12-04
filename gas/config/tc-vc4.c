@@ -515,8 +515,6 @@ vc4_operands (char **line, struct op_info *ops)
   return -1;
 }
 
-#include <ctype.h>
-
 struct match_operands {
   enum vc4_param_type pt;
   enum op_type ot;

@@ -25,7 +25,6 @@
 #include "libiberty.h"
 #include "opcode/vc4.h"
 #include <assert.h>
-#include <ctype.h>
 
 static int vc4_decode(bfd_vma memaddr,
 		      struct disassemble_info *dis_info)
