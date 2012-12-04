@@ -91,7 +91,7 @@ struct vc4_frag_type
   struct vc4_frag_option d[3];
 };
 
-typedef struct fix fixS;
+#include "write.h"
 
 void vc4_init_frag(fragS *f);
 void vc4_init_fix(fixS *f);
