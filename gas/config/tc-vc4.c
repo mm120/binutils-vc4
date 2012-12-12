@@ -102,7 +102,6 @@ const pseudo_typeS md_pseudo_table[] =
 
 
 
-static struct hash_control *vc4_hash;
 
 char *dump_asm_name(const struct vc4_asm *a, char *buf);
 
@@ -137,18 +136,7 @@ char *dump_asm_name(const struct vc4_asm *a, char *buf)
 void
 md_begin (void)
 {
-  struct vc4_asm *a;
-
   vc4_load_opcode_info();
-
-  vc4_hash = hash_new();
-
-  for (a = vc4_info->all_asms; a != NULL; a = a->next_all) {
-
-    struct vc4_asm *o = (struct vc4_asm *) hash_find(vc4_hash, a->str);
-    a->next = o;
-    hash_jam(vc4_hash, a->str, a);
-  }
 
   bfd_set_arch_mach(stdoutput, TARGET_ARCH, bfd_mach_vc4);
 }
@@ -795,8 +783,8 @@ static int match_op_info_to_vc4_asm(struct match_ops matches[MAX_MATCHES],
 static void fill_value(uint16_t *ins, const struct vc4_opcode *op,
 		       char code, uint32_t val)
 {
-  DEBUG(FILL, "Fill %s %c %u %d\n", op->string,
-	code, val, op->vals[code - 'a'].length);
+  DEBUG(FILL, "Fill %s %c %u %u\n", op->string,
+	code, val, vc4_op_get_val_width(op, code));
 
   vc4_fill_value(ins, NULL, op, code, val);
 }
@@ -992,6 +980,7 @@ md_assemble (char * str)
 {
   char op[16];
   const struct vc4_asm *opcode;
+  struct vc4_lookup *lup;
   const struct vc4_asm *list;
   size_t i;
   char *t;
@@ -1011,12 +1000,14 @@ md_assemble (char * str)
     return;
   }
 
-  list = (const struct vc4_asm *) hash_find (vc4_hash, op);
+  lup = vc4_lookup_find(vc4_info, op);
 
-  if (list == NULL) {
+  if (lup == NULL) {
     as_bad(_("unknown opcode '%s'"), op);
     return;
   }
+  list = lup->chain;
+  assert(list != NULL);
 
   t = input_line_pointer;
 

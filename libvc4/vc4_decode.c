@@ -74,7 +74,7 @@ static char *vc4_expand_expr(const char *p, const struct vc4_info *info,
 
 	for (; *p != 0; p++) {
 		np = NULL;
-		if ((*p >= 'a' && *p <= 'z') || *p == '$') {
+		if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '$') {
 
 			const struct vc4_val *val = vals + (int)*p;
 
@@ -211,23 +211,8 @@ const struct vc4_opcode *vc4_get_opcode(const struct vc4_info *info, const uint8
 
 	if (t->count == 1)
 		return t->tab[0];
-/*
-	for (i=0; i<t->count; i++) {
-		if ((b0 & t->tab[i]->ins_mask[0]) == t->tab[i]->ins[0] &&
-		    t->tab[i]->ins_mask[1] == 0)
-			return t->tab[i];
-	}
-*/
+
 	if (l < 4) {
-/*
-		fprintf(stderr, "overrun 2 %04x!\n", b0);
-		for (i=0; i<t->count; i++) {
-			fprintf(stderr, "> %04x %04x %s!\n",
-				t->tab[i]->ins_mask[0],
-				t->tab[i]->ins[0],
-				t->tab[i]->format);
-		}
-*/
 		b1 = 0;
 	} else {
 		b1 = vc4_get_le16(b + 2);

@@ -46,7 +46,7 @@ struct vc4_decode_table
 
 	char code;
 	size_t count;
-	char tab[32][16];
+	char tab[64][16];
 };
 
 /* name, has_reg, has_num, pc_rel, divide */
@@ -148,7 +148,8 @@ struct vc4_opcode
 	size_t num_params;
 	struct vc4_param params[5];
 
-	struct vc4_val vals[26];
+	struct vc4_val vals_lc[26];
+	struct vc4_val vals_uc[26];
 };
 
 /* Part of a 'pattern' opcode */
@@ -159,6 +160,12 @@ struct vc4_op_pat
 		char code;
 		uint32_t val;
 	} pat[3];
+};
+
+struct vc4_lookup
+{
+	const char *str;
+	struct vc4_asm *chain;
 };
 
 struct vc4_asm
@@ -173,9 +180,6 @@ struct vc4_asm
 
 	uint16_t ins[2];
 	uint16_t ins_mask[2];
-
-	struct vc4_asm *relax;
-	struct vc4_asm *relax_bigger;
 };
 
 struct vc4_opcode_tab
@@ -198,6 +202,9 @@ struct vc4_info
 
 	struct vc4_asm *all_asms;
 	struct vc4_asm *all_asms_tail;
+
+	struct vc4_lookup *lookup_tab;
+	size_t lookup_count;
 };
 
 uint16_t vc4_get_le16(const uint8_t *b);
@@ -237,5 +244,9 @@ int vc4_param_divide(enum vc4_param_type type);
 char *vc4_param_print(const struct vc4_param *par, char *buf);
 
 void vc4_swap_ins(uint16_t *ins, const struct vc4_opcode *op);
+
+struct vc4_lookup *vc4_lookup_find(const struct vc4_info *inf, const char *name);
+
+uint32_t vc4_op_get_val_width(const struct vc4_opcode *op, char code);
 
 #endif

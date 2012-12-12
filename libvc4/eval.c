@@ -139,7 +139,9 @@ int64_t eval(const char *s)
 
 	v = eval_expr(&ei);
 
-	assert(*ei.buf == 0);
+	if (*ei.buf) {
+		fprintf(stderr, "eval failed: %s (%s)\n", s, ei.buf);
+	}
 
 	return v;
 }
