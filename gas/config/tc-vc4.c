@@ -1182,8 +1182,11 @@ int vc4_relax_frag(asection *s, struct frag *fragP, long l)
 
       val = S_GET_VALUE(fragP->fr_symbol);
       val += fragP->fr_offset;
-      if (vc4_param_pc_rel(fo->param->type))
+      if (vc4_param_pc_rel(fo->param->type)) {
 	val -= fragP->fr_address;
+	val -= fragP->fr_fix;
+	val += fragP->fr_var;
+      }
 
       if (vc4_param_fits(fo->param, &val))
 	break;
@@ -1237,8 +1240,10 @@ md_estimate_size_before_relax (fragS * fragP, segT segment)
 
       val = S_GET_VALUE(fragP->fr_symbol);
       val += fragP->fr_offset;
-      if (vc4_param_pc_rel(fo->param->type))
+      if (vc4_param_pc_rel(fo->param->type)) {
 	val -= fragP->fr_address;
+	val -= fragP->fr_fix;
+      }
 
       if (vc4_param_fits(fo->param, &val))
 	break;
