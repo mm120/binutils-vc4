@@ -1063,6 +1063,12 @@ md_assemble (char * str)
 
     DEBUG(FRAG, "frag_var: %zd %p\n", opcode->op->length, frag_now);
 
+    /* This call doesn't add anything to the fragment, it just makes
+       sure that there is room enough for our new entry.  It also
+       means that frag_now is correct (because we know that we can add
+       our intruction to the current frag). */
+    frag_grow(5 * 2);
+
     frag_now->tc_frag_data.num = num_matches;
     frag_now->tc_frag_data.cur = 0;
     frag_now->tc_frag_data.op_inf = ops[matches[0].op_index];
