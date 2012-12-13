@@ -1447,6 +1447,21 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 
       switch (fixP->fx_r_type)
 	{
+	case BFD_RELOC_32:
+	  bfd_putl32((bfd_vma) value, where);
+	  break;
+
+	case BFD_RELOC_16:
+	  bfd_putl16((bfd_vma) value, where);
+	  break;
+
+	case BFD_RELOC_8:
+          if (value > 255 || value < -128)
+	    as_warn_where(fixP->fx_file, fixP->fx_line,
+			  _("operand out of range: %ld"), value);
+          *where = value;
+	  break;
+
 	case BFD_RELOC_VC4_REL7_MUL2:
 	case BFD_RELOC_VC4_REL8_MUL2:
 	case BFD_RELOC_VC4_REL10_MUL2:

@@ -359,6 +359,52 @@ static reloc_howto_type vc4_elf_howto_table[] =
 	 0x00000000,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
 	 FALSE),		/* pcrel_offset */
+
+  /* A absolute 8 bit relocation.  */
+  HOWTO (R_VC4_8,               /* type */
+	 0,			/* rightshift */
+	 0,			/* size (0 = byte, 1 = short, 2 = long) */
+	 8,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_dont, /* complain_on_overflow */
+	 bfd_elf_generic_reloc,	/* special_function */
+	 "R_VC4_8",             /* name */
+	 FALSE,			/* partial_inplace */
+	 0x00000000,		/* src_mask */
+	 0x000000ff,		/* dst_mask */
+	 FALSE),		/* pcrel_offset */
+
+  /* A absolute 16 bit relocation.  */
+  HOWTO (R_VC4_16,              /* type */
+	 0,			/* rightshift */
+	 1,			/* size (0 = byte, 1 = short, 2 = long) */
+	 16,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_dont, /* complain_on_overflow */
+	 bfd_elf_generic_reloc,	/* special_function */
+	 "R_VC4_16",            /* name */
+	 FALSE,			/* partial_inplace */
+	 0x00000000,		/* src_mask */
+	 0x0000ffff,		/* dst_mask */
+	 FALSE),		/* pcrel_offset */
+
+  /* A absolute 32 bit relocation.  */
+  HOWTO (R_VC4_32,              /* type */
+	 0,			/* rightshift */
+	 2,			/* size (0 = byte, 1 = short, 2 = long) */
+	 32,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_dont, /* complain_on_overflow */
+	 bfd_elf_generic_reloc,	/* special_function */
+	 "R_VC4_32",            /* name */
+	 FALSE,			/* partial_inplace */
+	 0x00000000,		/* src_mask */
+	 0xffffffff,		/* dst_mask */
+	 FALSE),		/* pcrel_offset */
+
 };
 
 /* Map BFD reloc types to Vc4 ELF reloc types.  */
@@ -413,6 +459,9 @@ static struct vc4_bfd_fixup_table bfd_fixup_table[] =
     { 'o', 1, 0, 1, "1110 0111 ww0d dddd ssss sooo oooo oooo oooo oooo oooo oooo", BFD_RELOC_VC4_IMM27, R_VC4_IMM27, X }, /*  */
     { 'u', 1, 0, 1, "1110 0000 ssss dddd uuuu uuuu uuuu uuuu uuuu uuuu uuuu uuuu", BFD_RELOC_VC4_IMM32, R_VC4_IMM32, X }, /*  */
     { 'z', 0, 0, 1, "1111 1xxx xxxx xxxx yyyy yyyy yyyy yyyy yyyy yyyy yyyy yyyy zzzz zzzz zzzz zzzz zzzz zzzz zzzz zzzz", BFD_RELOC_VC4_IMM32_2, R_VC4_IMM32_2, X }, /*  */
+    { 'o', 0, 0, 1, ""/*"oooo oooo"*/, BFD_RELOC_8, R_VC4_8, X }, /*  */
+    { 'o', 0, 0, 1, ""/*"oooo oooo oooo oooo"*/, BFD_RELOC_16, R_VC4_16, X }, /*  */
+    { 'o', 0, 0, 1, ""/*"oooo oooo oooo oooo oooo oooo oooo oooo"*/, BFD_RELOC_32, R_VC4_32, X }, /*  */
   };
 #undef X
 #define BFD_FIXUP_COUNT ARRAY_SIZE(bfd_fixup_table)

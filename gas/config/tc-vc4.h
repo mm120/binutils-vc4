@@ -32,7 +32,7 @@ extern unsigned long vc4_machine;
 #define TARGET_MACH (vc4_machine)
 
 #define TARGET_FORMAT		"elf32-vc4"
-#define TARGET_BYTES_BIG_ENDIAN	1
+#define TARGET_BYTES_BIG_ENDIAN	0
 
 extern const char vc4_comment_chars [];
 #define tc_comment_chars vc4_comment_chars
