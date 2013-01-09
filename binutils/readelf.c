@@ -10006,8 +10006,8 @@ is_32bit_abs_reloc (unsigned int reloc_type)
       return reloc_type == 6; /* R_V850_ABS32.  */
     case EM_VAX:
       return reloc_type == 1; /* R_VAX_32.  */
-    case EM_VIDEOCORE4:
-      return reloc_type == 1; /* R_VC4_32.  */
+    case EM_VIDEOCORE3:
+      return reloc_type == 23; /* R_VC4_32.  */
     case EM_X86_64:
     case EM_L1OM:
     case EM_K1OM:
