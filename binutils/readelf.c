@@ -1205,7 +1205,7 @@ dump_relocations (FILE * file,
 	  rtype = elf_vax_reloc_type (type);
 	  break;
 
-	case EM_VIDEOCORE4:
+	case EM_VIDEOCORE3:
 	  rtype = elf_vc4_reloc_type (type);
 	  break;
 
@@ -2042,7 +2042,6 @@ get_machine_name (unsigned e_machine)
     case EM_TILEGX:		return "Tilera TILE-Gx multicore architecture family";
     case EM_CUDA:		return "NVIDIA CUDA architecture";
     case EM_XGATE:		return "Motorola XGATE embedded processor";
-    case EM_VIDEOCORE4:		return "Broadcom VideoCore IV processor";
     default:
       snprintf (buff, sizeof (buff), _("<unknown>: 0x%x"), e_machine);
       return buff;
