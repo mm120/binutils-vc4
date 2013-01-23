@@ -581,7 +581,8 @@ static void vc4_classify_param(const struct vc4_opcode *op, struct vc4_param *pa
 
 		par->type = vc4_p_reg_r6;
 
-	} else if (strcmp(par->txt, "r6-r%d{6+n}") == 0) {
+	} else if (strcmp(par->txt, "r6-r%d{6+n}") == 0 ||
+		   strcmp(par->txt, "r6-r%d{(6+n)&31}") == 0) {
 
 		par->type = vc4_p_reg_range_r6;
 		par->reg_width = 2;
@@ -661,7 +662,7 @@ static void vc4_build_params(struct vc4_opcode *op)
 				*p1++ = 0;
 
 			op->params[op->num_params++].txt = strdup(p0);
-			assert(op->num_params <= 5);
+			assert(op->num_params <= VC4_MAX_PARAMS);
 
 			if (p1 == NULL)
 				break;

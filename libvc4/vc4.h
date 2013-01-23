@@ -132,6 +132,8 @@ struct vc4_val
 	uint32_t length;
 };
 
+#define VC4_MAX_PARAMS 15
+
 struct vc4_opcode
 {
 	struct vc4_opcode *next;
@@ -146,7 +148,7 @@ struct vc4_opcode
 	uint16_t ins_mask[2];
 
 	size_t num_params;
-	struct vc4_param params[5];
+	struct vc4_param params[VC4_MAX_PARAMS];
 
 	struct vc4_val vals_lc[26];
 	struct vc4_val vals_uc[26];
