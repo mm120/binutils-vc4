@@ -1,0 +1,15 @@
+# run tests for target VC4.
+
+if [istarget vc4-*-*] then {
+# test redefinitions
+    run_dump_test "redef"
+# test parsing of equ definitions
+    run_dump_test "equ"
+# test parsing of " and '
+    run_dump_test "quotes"
+    run_dump_test "simple_rts"
+    run_dump_test "tracer_reduced"
+    run_dump_test "test_values1"
+    run_dump_test "opcodes_simple"
+    run_dump_test "opcodes_push"
+}
