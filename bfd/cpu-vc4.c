@@ -41,4 +41,4 @@
   }
 
 const bfd_arch_info_type bfd_vc4_arch =
-  N (32, 32, 2, "VideoCore IV", TRUE, 0);
+  N (32, 32, 2, "vc4", TRUE, 0);
