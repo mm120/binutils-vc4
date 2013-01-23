@@ -12,4 +12,6 @@ if [istarget vc4-*-*] then {
     run_dump_test "test_values1"
     run_dump_test "opcodes_simple"
     run_dump_test "opcodes_push"
+    run_dump_test "bne_1"
+    run_dump_test "bne_2"
 }
