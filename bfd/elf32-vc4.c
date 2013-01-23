@@ -1340,6 +1340,7 @@ size_t vc4_bfd_fixup_get_ins_length(bfd_reloc_code_real_type bfd_fixup)
 
   return 0;
 }
+
 size_t vc4_bfd_fixup_get_divide(bfd_reloc_code_real_type bfd_fixup)
 {
   size_t i;
@@ -1347,6 +1348,19 @@ size_t vc4_bfd_fixup_get_divide(bfd_reloc_code_real_type bfd_fixup)
   for (i = 0; i < BFD_FIXUP_COUNT; i++) {
     if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
       return bfd_fixup_table[i].divide;
+    }
+  }
+
+  return 0;
+}
+
+int vc4_bfd_fixup_get_signed(bfd_reloc_code_real_type bfd_fixup)
+{
+  size_t i;
+
+  for (i = 0; i < BFD_FIXUP_COUNT; i++) {
+    if (bfd_fixup_table[i].bfd_reloc_val == bfd_fixup) {
+      return bfd_fixup_table[i].code == 'o';
     }
   }
 

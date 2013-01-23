@@ -31,7 +31,8 @@
 #include "elf/vc4.h"
 #include "opcode/vc4.h"
 
-const char comment_chars[]        = "#";
+const char vc4_comment_chars[] = ";";
+//const char comment_chars[]        = "#";
 const char line_comment_chars[]   = "#";
 const char line_separator_chars[] = ";";
 const char EXP_CHARS[]            = "eE";
@@ -89,8 +90,6 @@ ignore_pseudo (int val ATTRIBUTE_UNUSED)
   discard_rest_of_line ();
 }
 */
-
-const char vc4_comment_chars[] = ";#";
 
 /* The target specific pseudo-ops which we support.  */
 const pseudo_typeS md_pseudo_table[] =
@@ -958,9 +957,9 @@ static void build_match(struct match_ops *match, const struct op_info *ops)
   if (!match->broken && match->set) {
 
     match->bfd_fixup = vc4_bfd_fixup_get(opcode->op->string,
-				  match->param->num_code,
-				  vc4_param_pc_rel(match->param->type),
-				  vc4_param_divide(match->param->type));
+					 match->param->num_code,
+					 vc4_param_pc_rel(match->param->type),
+					 vc4_param_divide(match->param->type));
 
     if (match->bfd_fixup == 0) {
       as_bad("%s: Can't find bfd fixup type! %zd %s  %s %c %d %d\n", __func__,
@@ -1439,7 +1438,9 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 
   if (fixP->fx_done)
     {
-      size_t len, i;
+      size_t len, i, width;
+      int val_signed;
+      signed long long min, max;
 
       /* Fetch the instruction, insert the fully resolved operand
 	 value, and stuff the instruction back again.  */
@@ -1482,6 +1483,8 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 	case BFD_RELOC_VC4_IMM32_2:
 
 	  len = vc4_bfd_fixup_get_ins_length(fixP->fx_r_type);
+	  width = vc4_bfd_fixup_get_width(fixP->fx_r_type);
+	  val_signed = vc4_bfd_fixup_get_signed(fixP->fx_r_type);
 
 	  for (i=0; i<len; i++) {
 	    ins[i] = bfd_getl16(where + i * 2);
@@ -1505,6 +1508,19 @@ md_apply_fix (fixS *fixP, valueT * valP, segT seg)
 	  default:
 	    as_fatal("vc4_bfd_fixup_get_divide not 1, 2, or 4! (%zd)",
 		     vc4_bfd_fixup_get_divide(fixP->fx_r_type));
+	  }
+
+	  /* check whether the value fits */
+	  if (val_signed) {
+	    min = -(1LL << (width - 1));
+	    max = (1LL << (width - 1)) - 1;
+	  } else {
+	    min = 0;
+	    max = (1LL << width) - 1;
+	  }
+	  if (value > max || value < min) {
+	    as_bad_where(fixP->fx_file, fixP->fx_line,
+			 _("relocation does not fit"));
 	  }
 
 	  vc4_bfd_fixup_set(fixP->fx_r_type, ins, value);
