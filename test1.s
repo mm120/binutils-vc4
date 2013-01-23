@@ -28,20 +28,20 @@
 _start:	
 	b	__start
 
-	# Some test opcodes
+	; Some test opcodes
 	nop
 	bl	r3
-#	bl	(r3)
-#	bl	--(r3)
-#	bl	(r3)++
+;	bl	(r3)
+;	bl	--(r3)
+;	bl	(r3)++
 	b	r9
-#	bcc	r10
+;	bcc	r10
 	push r6
 	push r5
 	push lr
 	pop r7
 	push r6, lr
-#	push r6, pc
+;	push r6, pc
 	pop r6, pc
 	push r6-r8
 	push	r6-r8,lr
@@ -82,7 +82,7 @@ delay2:
 
 	poke	GPPUDCLK0, 0
 	
-	# Set up serial port
+	; Set up serial port
 	poke	AUX_ENABLES, 1
 
 	.equ BAUD_REG, ((SYSTEM_CLOCK/(TARGET_BAUD_RATE*8))-1)
@@ -108,8 +108,8 @@ loop:
 	and 	r2, 7
 	b 	loop
 
-# 	nop
-# 	nop
+; 	nop
+; 	nop
 
 	.global delay3
 	
@@ -129,9 +129,9 @@ hexstring_loop:
 	
 	ldb 	r2, digits(r1)
 	
-	lea 	r2, digits	#
-	add 	r2, r1		#
-	ldb 	r2, (r2)	#
+	lea 	r2, digits	;
+	add 	r2, r1		;
+	ldb 	r2, (r2)	;
 
 	bl	putchar
 	
@@ -146,14 +146,14 @@ digits:
 	.ascii	"0123456789abcdef"
 
 putchar:
-	# Wait for space in fifo
+	; Wait for space in fifo
 	mov 	r1, AUX_MU_LSR_REG
 	ld 	r1, (r1)
 	and 	r1, 0x20
 	cmp 	r1, 0x20
 	bne 	putchar
 	
-	# Push next character into serial fifo
+	; Push next character into serial fifo
 	mov 	r1, AUX_MU_IO_REG
 	st 	r2, (r1)
 

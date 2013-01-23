@@ -60,7 +60,7 @@ label:
 	push	r6
 	push	r16
 	push	r24
-	#push	r1
+	; push	r1
 	
 	ld	r2,(sp)
 	ld	r2,36(sp)

@@ -43,7 +43,7 @@ delay2:
 
 	poke	VC_GPIO_PUDCLK0, 0
 	
-	# Set up serial port
+	;; Set up serial port
 	poke	VC_AUX_ENABLES, 1
 
 	poke	VC_AUX_MU_IER_REG, 0

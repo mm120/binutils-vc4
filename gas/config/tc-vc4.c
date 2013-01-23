@@ -31,10 +31,9 @@
 #include "elf/vc4.h"
 #include "opcode/vc4.h"
 
-const char vc4_comment_chars[] = ";";
-//const char comment_chars[]        = "#";
+const char vc4_comment_chars[] = ";#";
 const char line_comment_chars[]   = "#";
-const char line_separator_chars[] = ";";
+const char line_separator_chars[] = "@";
 const char EXP_CHARS[]            = "eE";
 const char FLT_CHARS[]            = "dD";
 
